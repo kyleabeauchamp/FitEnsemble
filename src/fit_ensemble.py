@@ -79,11 +79,14 @@ def dobjective_chodera(alpha,f_sim,f_exp):
     """
     return dlog_partition(alpha,f_sim,f_exp) + f_exp
 
-def populations(alpha,f_sim,f_exp):
+def populations(alpha,f_sim,f_exp,prior_pops):
     """Return the reweighted conformational populations."""
-    z = partition(alpha,f_sim,f_exp)
     q = -1*f_sim.dot(alpha)
-    return np.exp(q) / z
+    q -= q.mean()
+    pi = np.exp(q)
+    pi *= prior_pops
+    pi /= pi.sum()
+    return pi
 
 def dpopulations(alpha,f_sim,f_exp):
     """Return the derivative of reweighted conformational populations.
@@ -96,7 +99,9 @@ def dpopulations(alpha,f_sim,f_exp):
     dp[j,i] = the partial derivative of p[j] with respect to alpha[i].  
     
     """
-    pi = populations(alpha,f_sim,f_exp)
+    prior_probs = np.ones(len(f_sim))
+    prior_probs /= prior_probs.sum()
+    pi = populations(alpha,f_sim,f_exp,prior_probs)
     v = f_sim.T.dot(pi)
     n = pi.shape[0]
     pi_diag = scipy.sparse.dia_matrix(([pi],[0]),(n,n))
@@ -104,7 +109,7 @@ def dpopulations(alpha,f_sim,f_exp):
     grad += np.outer(pi,v)
     return grad
     
-def chi2(alpha,f_sim,f_exp):
+def chi2(alpha,f_sim,f_exp,prior_pops):
     """Return the chi squared objective function.
 
     Notes
@@ -114,7 +119,7 @@ def chi2(alpha,f_sim,f_exp):
     ----------
     .. [1] Beauchamp, K. A. 
     """
-    pi = populations(alpha,f_sim,f_exp)
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     delta = f_exp - q
     f = np.linalg.norm(delta)**2.
@@ -130,7 +135,9 @@ def dchi2(alpha,f_sim,f_exp):
     ----------
     .. [1] Beauchamp, K. A. 
     """
-    pi = populations(alpha,f_sim,f_exp)
+    prior_probs = np.ones(len(f_sim))
+    prior_probs /= prior_probs.sum()
+    pi = populations(alpha,f_sim,f_exp,prior_probs)
     delta = 2*(f_sim.T.dot(pi) - f_exp)
     q = dpopulations(alpha,f_sim,f_exp)
     v = q.T.dot(f_sim)
@@ -147,8 +154,9 @@ def dridge(alpha):
 def minimize_chi2(alpha,f_sim,f_exp,prior_sigma):
     """Find the coupling parameters alpha to match experimental ensemble.
     """
-    f = lambda x: chi2(x,f_sim,f_exp) + ridge(x) / prior_sigma**2.
-    f0 = lambda x: chi2(x,f_sim,f_exp)
+    prior_probs = np.ones(f_sim.shape[0]) / float(f_sim.shape[0])
+    f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + ridge(x) / prior_sigma**2.
+    f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
     df = lambda x: dchi2(x,f_sim,f_exp)  + dridge(x)/ prior_sigma**2.
     
     alpha = scipy.optimize.fmin_l_bfgs_b(f,alpha,df,disp=True,maxfun=10000,factr=10.)[0]
