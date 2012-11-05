@@ -122,7 +122,11 @@ def chi2(alpha,f_sim,f_exp,prior_pops):
     pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     delta = f_exp - q
-    f = np.linalg.norm(delta)**2.
+
+    d = scipy.sparse.dia_matrix((pi,0),shape=(len(pi),len(pi)))
+    sigma = 1. + d.dot(f_sim).var(0) / len(pi)
+    
+    f = np.linalg.norm(delta / sigma)**2.
     return f
 
 def dchi2(alpha,f_sim,f_exp):
@@ -151,14 +155,44 @@ def dridge(alpha):
     """Return the gradient of the ridge (L2) regularization penalty."""
     return alpha
 
-def minimize_chi2(alpha,f_sim,f_exp,prior_sigma):
+def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_method="ridge"):
     """Find the coupling parameters alpha to match experimental ensemble.
     """
     prior_probs = np.ones(f_sim.shape[0]) / float(f_sim.shape[0])
-    f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + ridge(x) / prior_sigma**2.
-    f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
-    df = lambda x: dchi2(x,f_sim,f_exp)  + dridge(x)/ prior_sigma**2.
-    
+        
+    if regularization_method == "maxent":
+        f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + relent(x,f_sim,f_exp) * regularization_strength
+        f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
+        df = lambda x: dchi2(x,f_sim,f_exp) + drelent(x,f_sim,f_exp) * regularization_strength
+    elif regularization_method == "ridge":
+        f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + ridge(x) * regularization_strength
+        f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
+        df = lambda x: dchi2(x,f_sim,f_exp)  + dridge(x) * regularization_strength
+        
+    print(regularization_strength,f(alpha),f0(alpha))
+   
     alpha = scipy.optimize.fmin_l_bfgs_b(f,alpha,df,disp=True,maxfun=10000,factr=10.)[0]
-    print("Final Objective function (L2 regularized) = %f.  Final chi^2 = %f"%(f(alpha),f0(alpha)))
+    print("Final Objective function (regularized) = %f.  Final chi^2 = %f"%(f(alpha),f0(alpha)))
     return alpha
+    
+    
+def relent(alpha,f_sim,f_exp):
+    prior_probs = np.ones(len(f_sim))
+    prior_probs /= prior_probs.sum()
+    
+    pi = populations(alpha,f_sim,f_exp,prior_probs)
+    return np.log(pi).dot(pi)
+    
+def drelent(alpha,f_sim,f_exp):
+    prior_probs = np.ones(len(f_sim))
+    prior_probs /= prior_probs.sum()
+    
+    pi = populations(alpha,f_sim,f_exp,prior_probs)
+    q = f_sim.T.dot(pi)
+    grad = q * np.log(pi).dot(pi)
+    
+    L = pi*np.log(pi)
+    grad -= f_sim.T.dot(L)
+
+    return grad
+    
