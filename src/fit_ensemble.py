@@ -22,6 +22,11 @@ conformation.
 import numpy as np
 import scipy.stats, scipy.io,scipy.optimize, scipy.misc
 
+def uniform(n):
+    x = np.ones(n)
+    x /= x.sum()
+    return x
+
 def log_partition(alpha,f_sim,f_exp):
     """Return the log partition function of an alpha-reweighted ensemble."""
     q = -1*f_sim.dot(alpha).astype('float128')
@@ -79,8 +84,10 @@ def dobjective_chodera(alpha,f_sim,f_exp):
     """
     return dlog_partition(alpha,f_sim,f_exp) + f_exp
 
-def populations(alpha,f_sim,f_exp,prior_pops):
+def populations(alpha,f_sim,f_exp,prior_pops=None):
     """Return the reweighted conformational populations."""
+    if prior_pops == None:
+        prior_pops = np.ones(len(f_sim)) / len(f_sim)
     q = -1*f_sim.dot(alpha)
     q -= q.mean()
     pi = np.exp(q)
@@ -109,7 +116,7 @@ def dpopulations(alpha,f_sim,f_exp):
     grad += np.outer(pi,v)
     return grad
     
-def chi2(alpha,f_sim,f_exp,prior_pops):
+def chi2(alpha,f_sim,f_exp,prior_pops = None):
     """Return the chi squared objective function.
 
     Notes
@@ -119,13 +126,14 @@ def chi2(alpha,f_sim,f_exp,prior_pops):
     ----------
     .. [1] Beauchamp, K. A. 
     """
+    if prior_pops == None:
+        prior_pops = uniform(len(f_sim))
     pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     delta = f_exp - q
 
-    d = scipy.sparse.dia_matrix((pi,0),shape=(len(pi),len(pi)))
-    sigma = 1. + d.dot(f_sim).var(0) / len(pi)
-    
+    sigma = variance(alpha,f_sim,f_exp)**0.5
+   
     f = np.linalg.norm(delta / sigma)**2.
     return f
 
@@ -139,14 +147,49 @@ def dchi2(alpha,f_sim,f_exp):
     ----------
     .. [1] Beauchamp, K. A. 
     """
-    prior_probs = np.ones(len(f_sim))
-    prior_probs /= prior_probs.sum()
-    pi = populations(alpha,f_sim,f_exp,prior_probs)
-    delta = 2*(f_sim.T.dot(pi) - f_exp)
-    q = dpopulations(alpha,f_sim,f_exp)
-    v = q.T.dot(f_sim)
-    return v.dot(delta)
 
+    pi = populations(alpha,f_sim,f_exp)
+    v = variance(alpha,f_sim,f_exp)
+    delta = (f_sim.T.dot(pi) - f_exp) / v    
+    dpi = dpopulations(alpha,f_sim,f_exp)
+    
+    r = dpi.T.dot(f_sim)
+    grad = 2*r.dot(delta)
+    
+    dv = dvariance(alpha,f_sim,f_exp)
+    grad -= dv.T.dot(delta**2.)
+    
+    return grad
+    
+def variance(alpha,f_sim,f_exp):
+    n = len(f_exp)
+    m = len(f_sim)
+    v = np.ones(n)
+    pi = populations(alpha,f_sim,f_exp)
+    f_ensemble = f_sim.T.dot(pi)
+    D = scipy.sparse.dia_matrix((pi,0),(m,m))
+    q = D.dot(f_sim) - f_ensemble
+    v += q.var(0)
+    
+    return v
+    
+def dvariance(alpha,f_sim,f_exp):
+    n = len(f_exp)
+    m = len(f_sim)
+    dpi = dpopulations(alpha,f_sim,f_exp)
+    pi = populations(alpha,f_sim,f_exp)
+    f_ensemble = f_sim.T.dot(pi)
+
+    dV = np.zeros((n,n))
+    for i in xrange(n):
+        delta = f_sim[:,i]*pi - f_ensemble[i]
+        S = (dpi.T*f_sim[:,i]).T
+        dV[i] = delta.dot(S)
+        
+    dV *= 2 / float(m)
+
+    return dV
+    
 def ridge(alpha):
     """Return the ridge (L2) regularization penalty."""
     return 0.5*np.linalg.norm(alpha)**2.
