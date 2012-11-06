@@ -86,8 +86,10 @@ def dobjective_chodera(alpha,f_sim,f_exp):
 
 def populations(alpha,f_sim,f_exp,prior_pops=None):
     """Return the reweighted conformational populations."""
+
     if prior_pops == None:
         prior_pops = np.ones(len(f_sim)) / len(f_sim)
+        
     q = -1*f_sim.dot(alpha)
     q -= q.mean()
     pi = np.exp(q)
@@ -95,7 +97,7 @@ def populations(alpha,f_sim,f_exp,prior_pops=None):
     pi /= pi.sum()
     return pi
 
-def dpopulations(alpha,f_sim,f_exp):
+def dpopulations(alpha,f_sim,f_exp,prior_pops=None):
     """Return the derivative of reweighted conformational populations.
     
     Notes
@@ -106,9 +108,10 @@ def dpopulations(alpha,f_sim,f_exp):
     dp[j,i] = the partial derivative of p[j] with respect to alpha[i].  
     
     """
-    prior_probs = np.ones(len(f_sim))
-    prior_probs /= prior_probs.sum()
-    pi = populations(alpha,f_sim,f_exp,prior_probs)
+    if prior_pops == None:
+        prior_pops = uniform(len(f_sim))
+
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
     v = f_sim.T.dot(pi)
     n = pi.shape[0]
     pi_diag = scipy.sparse.dia_matrix(([pi],[0]),(n,n))
@@ -128,6 +131,7 @@ def chi2(alpha,f_sim,f_exp,prior_pops = None):
     """
     if prior_pops == None:
         prior_pops = uniform(len(f_sim))
+
     pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     delta = f_exp - q
@@ -198,18 +202,20 @@ def dridge(alpha):
     """Return the gradient of the ridge (L2) regularization penalty."""
     return alpha
 
-def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_method="ridge"):
+def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_method="ridge",prior_pops=None):
     """Find the coupling parameters alpha to match experimental ensemble.
     """
-    prior_probs = np.ones(f_sim.shape[0]) / float(f_sim.shape[0])
+    if prior_pops == None:
+        prior_pops = np.ones(len(f_sim)) / len(f_sim)
+
         
     if regularization_method == "maxent":
-        f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + relent(x,f_sim,f_exp) * regularization_strength
-        f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
+        f = lambda x: chi2(x,f_sim,f_exp,prior_pops) + relent(x,f_sim,f_exp) * regularization_strength
+        f0 = lambda x: chi2(x,f_sim,f_exp,prior_pops)
         df = lambda x: dchi2(x,f_sim,f_exp) + drelent(x,f_sim,f_exp) * regularization_strength
     elif regularization_method == "ridge":
-        f = lambda x: chi2(x,f_sim,f_exp,prior_probs) + ridge(x) * regularization_strength
-        f0 = lambda x: chi2(x,f_sim,f_exp,prior_probs)
+        f = lambda x: chi2(x,f_sim,f_exp,prior_pops) + ridge(x) * regularization_strength
+        f0 = lambda x: chi2(x,f_sim,f_exp,prior_pops)
         df = lambda x: dchi2(x,f_sim,f_exp)  + dridge(x) * regularization_strength
         
     print(regularization_strength,f(alpha),f0(alpha))
@@ -220,17 +226,17 @@ def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_meth
     
     
 def relent(alpha,f_sim,f_exp):
-    prior_probs = np.ones(len(f_sim))
-    prior_probs /= prior_probs.sum()
+    prior_pops = np.ones(len(f_sim))
+    prior_pops /= prior_pops.sum()
     
-    pi = populations(alpha,f_sim,f_exp,prior_probs)
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
     return np.log(pi).dot(pi)
     
 def drelent(alpha,f_sim,f_exp):
-    prior_probs = np.ones(len(f_sim))
-    prior_probs /= prior_probs.sum()
+    prior_pops = np.ones(len(f_sim))
+    prior_pops /= prior_pops.sum()
     
-    pi = populations(alpha,f_sim,f_exp,prior_probs)
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     grad = q * np.log(pi).dot(pi)
     
