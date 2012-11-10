@@ -22,6 +22,19 @@ conformation.
 import numpy as np
 import scipy.stats, scipy.io,scipy.optimize, scipy.misc
 
+def identify_outliers(f_sim,f_exp):
+    outliers = []
+    for i,x in enumerate(f_sim.T):
+        mu = f_exp[i]
+        m = x.min()
+        M = x.max()
+        if mu >=m and mu <=M:
+            pass
+        else:
+            outliers.append(i)
+    outliers = np.array(outliers)
+    return outliers
+
 def uniform(n):
     x = np.ones(n)
     x /= x.sum()
@@ -136,9 +149,7 @@ def chi2(alpha,f_sim,f_exp,prior_pops = None):
     q = f_sim.T.dot(pi)
     delta = f_exp - q
 
-    sigma = variance(alpha,f_sim,f_exp)**0.5
-   
-    f = np.linalg.norm(delta / sigma)**2.
+    f = np.linalg.norm(delta)**2.
     return f
 
 def dchi2(alpha,f_sim,f_exp):
@@ -153,47 +164,14 @@ def dchi2(alpha,f_sim,f_exp):
     """
 
     pi = populations(alpha,f_sim,f_exp)
-    v = variance(alpha,f_sim,f_exp)
-    delta = (f_sim.T.dot(pi) - f_exp) / v    
+    delta = (f_sim.T.dot(pi) - f_exp)
     dpi = dpopulations(alpha,f_sim,f_exp)
     
     r = dpi.T.dot(f_sim)
     grad = 2*r.dot(delta)
-    
-    dv = dvariance(alpha,f_sim,f_exp)
-    grad -= dv.T.dot(delta**2.)
-    
-    return grad
-    
-def variance(alpha,f_sim,f_exp):
-    n = len(f_exp)
-    m = len(f_sim)
-    v = np.ones(n)
-    pi = populations(alpha,f_sim,f_exp)
-    f_ensemble = f_sim.T.dot(pi)
-    D = scipy.sparse.dia_matrix((pi,0),(m,m))
-    q = D.dot(f_sim) - f_ensemble
-    v += q.var(0)
-    
-    return v
-    
-def dvariance(alpha,f_sim,f_exp):
-    n = len(f_exp)
-    m = len(f_sim)
-    dpi = dpopulations(alpha,f_sim,f_exp)
-    pi = populations(alpha,f_sim,f_exp)
-    f_ensemble = f_sim.T.dot(pi)
-
-    dV = np.zeros((n,n))
-    for i in xrange(n):
-        delta = f_sim[:,i]*pi - f_ensemble[i]
-        S = (dpi.T*f_sim[:,i]).T
-        dV[i] = delta.dot(S)
         
-    dV *= 2 / float(m)
-
-    return dV
-    
+    return grad
+        
 def ridge(alpha):
     """Return the ridge (L2) regularization penalty."""
     return 0.5*np.linalg.norm(alpha)**2.
