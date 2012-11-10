@@ -22,87 +22,20 @@ conformation.
 import numpy as np
 import scipy.stats, scipy.io,scipy.optimize, scipy.misc
 
-def identify_outliers(f_sim,f_exp):
-    outliers = []
-    for i,x in enumerate(f_sim.T):
-        mu = f_exp[i]
-        m = x.min()
-        M = x.max()
-        if mu >=m and mu <=M:
-            pass
-        else:
-            outliers.append(i)
-    outliers = np.array(outliers)
-    return outliers
-
-def uniform(n):
-    x = np.ones(n)
-    x /= x.sum()
-    return x
-
-def log_partition(alpha,f_sim,f_exp):
-    """Return the log partition function of an alpha-reweighted ensemble."""
-    q = -1*f_sim.dot(alpha).astype('float128')
-    return scipy.misc.logsumexp(q)
-
-def dlog_partition(alpha,f_sim,f_exp):
-    """Return the gradient of the alpha-reweighted log partition function.
-
-    Notes
-    -----
-    This simply gives the alpha-reweighted ensemble average prediction of
-    the experimental observables.  
-    
-    """
-    pi = populations(alpha,f_sim,f_exp)
-    grad = f_sim.T.dot(pi)
-    return grad
-
-def partition(alpha,f_sim,f_exp):
-    """Return the partition function of an alpha-reweighted ensemble."""
-    return np.exp(log_partition(alpha,f_sim,f_exp))
-    
-def objective_chodera(alpha,f_sim,f_exp):
-    """Return the maximum entropy objective function from Pitera et al.
-
-    Notes
-    -----
-    This is equation 15 in [1].  If your experimental data is consistent 
-    with your simulated ensemble and the hessian is positive definite, then
-    minimizing this objective function will lead to the unique maximum 
-    entropy reweighted ensemble. 
-
-    References
-    ----------
-    .. [1] Pitera, J, Chodera, J. "On the use of Experimental Observables to 
-        Bias Simulated Ensembles." JCTC 2012.
-    """
-    f = log_partition(alpha,f_sim,f_exp) + f_exp.dot(alpha)
-    return f
-    
-def dobjective_chodera(alpha,f_sim,f_exp):
-    """Return the gradient of the maximum entropy objective function.
-
-    Notes
-    -----
-    This is equation 16 in [1].  If your experimental data is consistent 
-    with your simulated ensemble and the hessian is positive definite, then
-    this gradient will equal zero at the unique maximum entropy reweighted 
-    ensemble. 
-
-    References
-    ----------
-    .. [1] Pitera, J, Chodera, J. "On the use of Experimental Observables to 
-        Bias Simulated Ensembles." JCTC 2012.
-    """
-    return dlog_partition(alpha,f_sim,f_exp) + f_exp
+def get_prior_pops(n,prior_pops):
+    """Helper function returns uniform distribution if prior_pops is None."""
+    if prior_pops != None:
+        return prior_pops
+    else:
+        x = np.ones(n)
+        x /= x.sum()
+        return x
 
 def populations(alpha,f_sim,f_exp,prior_pops=None):
     """Return the reweighted conformational populations."""
 
-    if prior_pops == None:
-        prior_pops = np.ones(len(f_sim)) / len(f_sim)
-        
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
+    
     q = -1*f_sim.dot(alpha)
     q -= q.mean()
     pi = np.exp(q)
@@ -121,9 +54,7 @@ def dpopulations(alpha,f_sim,f_exp,prior_pops=None):
     dp[j,i] = the partial derivative of p[j] with respect to alpha[i].  
     
     """
-    if prior_pops == None:
-        prior_pops = uniform(len(f_sim))
-
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
     pi = populations(alpha,f_sim,f_exp,prior_pops)
     v = f_sim.T.dot(pi)
     n = pi.shape[0]
@@ -142,9 +73,7 @@ def chi2(alpha,f_sim,f_exp,prior_pops = None):
     ----------
     .. [1] Beauchamp, K. A. 
     """
-    if prior_pops == None:
-        prior_pops = uniform(len(f_sim))
-
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
     pi = populations(alpha,f_sim,f_exp,prior_pops)
     q = f_sim.T.dot(pi)
     delta = f_exp - q
@@ -152,7 +81,7 @@ def chi2(alpha,f_sim,f_exp,prior_pops = None):
     f = np.linalg.norm(delta)**2.
     return f
 
-def dchi2(alpha,f_sim,f_exp):
+def dchi2(alpha,f_sim,f_exp,prior_pops = None):
     """Return the gradient of chi squared objective function.
 
     Notes
@@ -162,10 +91,12 @@ def dchi2(alpha,f_sim,f_exp):
     ----------
     .. [1] Beauchamp, K. A. 
     """
+    
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
 
-    pi = populations(alpha,f_sim,f_exp)
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
     delta = (f_sim.T.dot(pi) - f_exp)
-    dpi = dpopulations(alpha,f_sim,f_exp)
+    dpi = dpopulations(alpha,f_sim,f_exp,prior_pops)
     
     r = dpi.T.dot(f_sim)
     grad = 2*r.dot(delta)
@@ -183,18 +114,14 @@ def dridge(alpha):
 def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_method="ridge",prior_pops=None):
     """Find the coupling parameters alpha to match experimental ensemble.
     """
-    if prior_pops == None:
-        prior_pops = np.ones(len(f_sim)) / len(f_sim)
-
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
         
-    if regularization_method == "maxent":
-        f = lambda x: chi2(x,f_sim,f_exp,prior_pops) + relent(x,f_sim,f_exp) * regularization_strength
-        f0 = lambda x: chi2(x,f_sim,f_exp,prior_pops)
-        df = lambda x: dchi2(x,f_sim,f_exp) + drelent(x,f_sim,f_exp) * regularization_strength
-    elif regularization_method == "ridge":
+    if regularization_method == "ridge":
         f = lambda x: chi2(x,f_sim,f_exp,prior_pops) + ridge(x) * regularization_strength
         f0 = lambda x: chi2(x,f_sim,f_exp,prior_pops)
         df = lambda x: dchi2(x,f_sim,f_exp)  + dridge(x) * regularization_strength
+    else:
+        raise(Exception("Incorrect regularization_method ( = %s"%regularization_method))
         
     print(regularization_strength,f(alpha),f0(alpha))
    
@@ -202,24 +129,4 @@ def minimize_chi2(alpha,f_sim,f_exp,regularization_strength, regularization_meth
     print("Final Objective function (regularized) = %f.  Final chi^2 = %f"%(f(alpha),f0(alpha)))
     return alpha
     
-    
-def relent(alpha,f_sim,f_exp):
-    prior_pops = np.ones(len(f_sim))
-    prior_pops /= prior_pops.sum()
-    
-    pi = populations(alpha,f_sim,f_exp,prior_pops)
-    return np.log(pi).dot(pi)
-    
-def drelent(alpha,f_sim,f_exp):
-    prior_pops = np.ones(len(f_sim))
-    prior_pops /= prior_pops.sum()
-    
-    pi = populations(alpha,f_sim,f_exp,prior_pops)
-    q = f_sim.T.dot(pi)
-    grad = q * np.log(pi).dot(pi)
-    
-    L = pi*np.log(pi)
-    grad -= f_sim.T.dot(L)
-
-    return grad
     
