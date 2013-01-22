@@ -18,7 +18,7 @@ conformation.
 
 
 """
-
+import abc
 import numpy as np
 import scipy.stats, scipy.io,scipy.optimize, scipy.misc,scipy.linalg,scipy.sparse
 import pymc
@@ -105,55 +105,27 @@ def dchi2(alpha,f_sim,f_exp,prior_pops = None):
     return grad
         
     
-class MCMC_Sampler():
-    def __init__(self,f_sim,f_exp,regularization_strength,bootstrap_index_list,precision=None,save_pops=False,alpha0=None,uniform_prior_pops=True):
-        D = f_sim - f_exp
+class LVBP():
+    __metaclass__ = abc.ABCMeta
+    
+    def __init__(self,f_sim,f_exp,bootstrap_index_list,alpha0=None,uniform_prior_pops=True):
+        self.D = f_sim - f_exp
         self.prior_pops = None
         self.f_sim = f_sim
-        self.f_exp = f_exp
-        self.D = D
-        
+        self.f_exp = f_exp        
         self.bootstrap_index_list = bootstrap_index_list
         
-        m,n = f_sim.shape
-        if precision == None:
-            precision = np.cov(f_sim.T)
+        self.m,self.n = f_sim.shape
                   
         if alpha0 == None:
-            alpha0 = np.zeros(n)
-
-        alpha = pymc.MvNormal("alpha",np.zeros(n),tau=precision*regularization_strength,value=alpha0)
+            alpha0 = np.zeros(self.n)
         
         if uniform_prior_pops == True:
-            prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)),value=np.ones(len(bootstrap_index_list) - 1) / float(len(bootstrap_index_list)))
+            self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)),value=np.ones(len(bootstrap_index_list) - 1) / float(len(bootstrap_index_list)))
         else:
-            prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)))
+            self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)))
 
-        prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)),value=prior_dirichlet.value,observed=True)
-        
-        @pymc.dtrm
-        def prior_pops(prior_dirichlet=prior_dirichlet):
-            return dirichlet_to_prior_pops(prior_dirichlet,self.bootstrap_index_list,len(self.f_sim))
-        
-        @pymc.dtrm
-        def pi(alpha=alpha,prior_pops=prior_pops):
-            return populations(alpha,f_sim,f_exp,prior_pops)
-            
-        @pymc.potential
-        def logp(pi=pi):
-            means = pi.dot(D)
-            f = -1*np.linalg.norm(means)**2.
-            return f
-        
-        if save_pops == False:
-            pi.keep_trace = False
-            prior_pops.keep_trace = False
-        
-        self.pi = pi
-        self.logp = logp
-        self.alpha = alpha
-        self.prior_pops = prior_pops
-        self.variables = [logp,alpha,pi,prior_pops,prior_dirichlet]
+        self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet",np.ones(len(self.bootstrap_index_list)),value=self.prior_dirichlet.value,observed=True)
             
     def sample(self,num_samples,thin=1,burn=0):        
         self.S = pymc.MCMC(self.variables)
@@ -176,41 +148,74 @@ class MCMC_Sampler():
 
         return p,chi2
 
+
+class Gaussian_LVBP(LVBP):
+
+    def __init__(self,f_sim,f_exp,regularization_strength,bootstrap_index_list,precision=None,save_pops=False,alpha0=None,uniform_prior_pops=True):
+
+        LVBP.__init__(self,f_sim,f_exp,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
         
-class jeffreys_mcmc_sampler():
-    def __init__(self,f_sim,f_exp,save_pops=False):
-        D = f_sim - f_exp
-        
-        m,n = f_sim.shape    
-        alpha = pymc.Uninformative("alpha",value=np.zeros(n))
+        if precision == None:
+            precision = np.cov(f_sim.T)
+
+        alpha = pymc.MvNormal("alpha",np.zeros(self.n),tau=precision*regularization_strength,value=alpha0)
+
+        @pymc.dtrm
+        def prior_pops(prior_dirichlet=self.prior_dirichlet):
+            return dirichlet_to_prior_pops(prior_dirichlet,self.bootstrap_index_list,len(self.f_sim))
         
         @pymc.dtrm
-        def pi(alpha=alpha):
-            return populations(alpha,f_sim,f_exp)
+        def pi(alpha=alpha,prior_pops=prior_pops):
+            return populations(alpha,f_sim,f_exp,prior_pops)
+        
+        @pymc.dtrm
+        def mu(pi=pi):
+            return pi.dot(self.D)
+        
+        @pymc.potential
+        def logp(pi=pi,mu=mu):
+            return -1*np.linalg.norm(mu)**2.
+
+        if save_pops == False:
+            pi.keep_trace = False
+            prior_pops.keep_trace = False
+            
+        self.variables = [logp,alpha,pi,mu,prior_pops,self.prior_dirichlet]
+        self.pi, self.prior_pops, self.alpha = pi , prior_pops, alpha
+        
+class Jeffreys_LVBP(LVBP):
+    def __init__(self,f_sim,f_exp,bootstrap_index_list,save_pops=False,alpha0=None,uniform_prior_pops=True):
+
+        LVBP.__init__(self,f_sim,f_exp,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
+        alpha = pymc.Uninformative("alpha",value=np.zeros(self.n))
+        
+        @pymc.dtrm
+        def prior_pops(prior_dirichlet=self.prior_dirichlet):
+            return dirichlet_to_prior_pops(prior_dirichlet,self.bootstrap_index_list,len(self.f_sim))
+        
+        @pymc.dtrm
+        def pi(alpha=alpha,prior_pops=prior_pops):
+            return populations(alpha,f_sim,f_exp,prior_pops)
+        
+        @pymc.dtrm
+        def mu(pi=pi):
+            return pi.dot(self.D)
             
         @pymc.potential
-        def logp(pi=pi):
-            means = pi.dot(D)
-            return -1*np.linalg.norm(means)**2.
+        def logp(pi=pi,mu=mu):
+            return -1*np.linalg.norm(mu)**2.
 
         @pymc.potential
-        def jeff(pi=pi):
-            j = jeffreys(pi,f_sim)
-            if j == 0.:
-                return -1*np.inf
-            return np.log(j)
+        def jeff(pi=pi,mu=mu):
+            return log_jeffreys(pi,f_sim,mu=mu)
         
         if save_pops == False:
             pi.keep_trace = False
+            prior_pops.keep_trace = False
                     
-        self.pi = pi
-        self.logp = logp
-        self.alpha = alpha
-        self.variables = [logp,alpha,pi,jeff]
+        self.variables = [logp,alpha,pi,mu,prior_pops,self.prior_dirichlet,jeff]
+        self.pi, self.prior_pops, self.alpha = pi , prior_pops, alpha
         
-    def sample(self,num_samples,thin=1):
-        self.S = pymc.MCMC(self.variables)
-        self.S.sample(num_samples,thin=thin)    
 
 def dirichlet_to_prior_pops(dirichlet,bootstrap_index_list,m):
     x = np.ones(m)
@@ -233,7 +238,7 @@ def cross_validated_mcmc(f_sim,f_exp,regularization_strength,bootstrap_index_lis
         test_ind = np.setdiff1d(all_indices,train_ind)
         num_local_block = 2
         local_bootstrap_index_list = np.array_split(np.arange(len(train_ind)),num_local_block)
-        S = MCMC_Sampler(f_sim[train_ind],f_exp,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
+        S = Gaussian_LVBP(f_sim[train_ind],f_exp,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
         test_chi_observable = pymc.Lambda("test_chi_observable",lambda alpha=S.alpha: chi2(alpha,f_sim[test_ind],f_exp))
         train_chi_observable = pymc.Lambda("train_chi_observable",lambda alpha=S.alpha: chi2(alpha,f_sim[train_ind],f_exp))
         S.variables.append(test_chi_observable)
@@ -247,8 +252,9 @@ def cross_validated_mcmc(f_sim,f_exp,regularization_strength,bootstrap_index_lis
     print regularization_strength, train_chi.mean(), test_chi.mean()
     return test_chi,train_chi
             
-def fisher_information(populations,f_sim):
-    mu = f_sim.T.dot(populations)
+def fisher_information(populations,f_sim,mu=None):
+    if mu == None:
+        mu = f_sim.T.dot(populations)
     D = f_sim - mu
     n = len(populations)
     Dia = scipy.sparse.dia_matrix((populations,0),(n,n))
@@ -256,6 +262,7 @@ def fisher_information(populations,f_sim):
     S = D.T.dot(f_sim)
     return S
 
-def jeffreys(populations,f_sim):
-    I = fisher_information(populations,f_sim)
-    return np.abs(np.linalg.det(I))**0.5
+def log_jeffreys(populations,f_sim,mu=None):
+    I = fisher_information(populations,f_sim,mu=mu)
+    sign,logdet = np.linalg.slogdet(I)
+    return 0.5 * logdet
