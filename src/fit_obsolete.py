@@ -116,3 +116,47 @@ def drelent(alpha,f_sim,f_exp):
 
     return grad
     
+    
+def dchi2(alpha,f_sim,f_exp,prior_pops = None):
+    """Return the gradient of chi squared objective function.
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] Beauchamp, K. A. 
+    """
+    
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
+
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
+    delta = (f_sim.T.dot(pi) - f_exp)
+    dpi = dpopulations(alpha,f_sim,f_exp,prior_pops)
+    
+    r = dpi.T.dot(f_sim)
+    grad = 2*r.dot(delta)
+        
+    return grad
+
+
+def dpopulations(alpha,f_sim,f_exp,prior_pops=None):
+    """Return the derivative of reweighted conformational populations.
+    
+    Notes
+    -----
+    This returns a two-dimensional Numpy array.  Suppose that p[j] are the
+    populations of each conformation.
+    
+    dp[j,i] = the partial derivative of p[j] with respect to alpha[i].  
+    
+    """
+    prior_pops = get_prior_pops(len(f_sim),prior_pops)
+    pi = populations(alpha,f_sim,f_exp,prior_pops)
+    v = f_sim.T.dot(pi)
+    n = pi.shape[0]
+    pi_diag = scipy.sparse.dia_matrix(([pi],[0]),(n,n))
+    grad = -1*pi_diag.dot(f_sim)
+    grad += np.outer(pi,v)
+    return grad
+    
