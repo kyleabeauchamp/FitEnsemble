@@ -66,7 +66,7 @@ def chi2(pi, predictions, measurements, uncertainties, mu=None):
 class LVBP():
     __metaclass__ = abc.ABCMeta
     
-    def __init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=None,uniform_prior_pops=True):
+    def __init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=True):
         self.uncertainties = uncertainties
         self.prior_pops = None
         self.predictions = predictions
@@ -74,16 +74,13 @@ class LVBP():
         self.bootstrap_index_list = bootstrap_index_list
         
         self.num_frames, self.num_measurements = predictions.shape
-                  
-        if alpha0 == None:
-            alpha0 = np.zeros(self.num_measurements)
-        
+                          
         if uniform_prior_pops == True:
             self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(len(self.bootstrap_index_list)), value=np.ones(len(bootstrap_index_list) - 1) / float(len(bootstrap_index_list)))
         else:
             self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(len(self.bootstrap_index_list)))
 
-        self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(len(self.bootstrap_index_list)), value=self.prior_dirichlet.value, observed=True)
+        self.prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(len(self.bootstrap_index_list)), value=self.prior_dirichlet.value, observed=True)  # We now fix the value of the random variable using observed=True
 
 
     def initialize_deterministics(self):
@@ -144,23 +141,23 @@ class LVBP():
 
 class Gaussian_LVBP(LVBP):
 
-    def __init__(self, predictions, measurements, uncertainties, regularization_strength, bootstrap_index_list, precision=None, alpha0=None, uniform_prior_pops=True):
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength, bootstrap_index_list, precision=None, uniform_prior_pops=True):
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
+        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=uniform_prior_pops)
         
         if precision == None:
             precision = np.cov(predictions.T)
             if precision.ndim == 0:
                 precision = precision.reshape((1,1))
 
-        self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength, value=alpha0)
+        self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength)
         self.initialize_variables()
 
 class MaxEnt_LVBP(LVBP):
 
-    def __init__(self,predictions,measurements,uncertainties,regularization_strength,bootstrap_index_list,precision=None,alpha0=None,uniform_prior_pops=True):
+    def __init__(self,predictions,measurements,uncertainties,regularization_strength,bootstrap_index_list,precision=None,uniform_prior_pops=True):
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
+        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=uniform_prior_pops)
         
         if precision == None:
             precision = np.cov(predictions.T)
@@ -181,16 +178,16 @@ class MaxEnt_LVBP(LVBP):
 
 class Gaussian_Corr_LVBP(LVBP):
 
-    def __init__(self,predictions,measurements,uncertainties,regularization_strength,bootstrap_index_list,precision=None,alpha0=None,uniform_prior_pops=True):
+    def __init__(self,predictions,measurements,uncertainties,regularization_strength,bootstrap_index_list,precision=None,uniform_prior_pops=True):
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
+        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=uniform_prior_pops)
         
         if precision == None:
             precision = np.cov(predictions.T)
             if precision.ndim == 0:
                 precision = precision.reshape((1,1))
         
-        self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength, value=alpha0)
+        self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength)
         self.initialize_variables()
 
         rho = np.corrcoef(predictions.T)
@@ -202,12 +199,12 @@ class Gaussian_Corr_LVBP(LVBP):
             chi2 = rho_inverse.dot(z)
             chi2 = z.dot(chi2)
             return -1 * chi2
-        self.logp = logp            
+        self.logp = logp
         
 class Jeffreys_LVBP(LVBP):
-    def __init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=None,uniform_prior_pops=True,weights_alpha=None):
+    def __init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=True,weights_alpha=None):
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,alpha0=alpha0,uniform_prior_pops=uniform_prior_pops)
+        LVBP.__init__(self,predictions,measurements,uncertainties,bootstrap_index_list,uniform_prior_pops=uniform_prior_pops)
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))
         self.initialize_variables()
                 
@@ -215,7 +212,7 @@ class Jeffreys_LVBP(LVBP):
         def logp_prior(pi=self.pi,mu=self.mu):
             return log_jeffreys(pi,predictions,mu=mu)
         self.logp_prior = logp_prior
-        
+
 
 def dirichlet_to_prior_pops(dirichlet,bootstrap_index_list,num_frames):
     x = np.ones(num_frames)
@@ -234,20 +231,22 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, regularizatio
     test_chi = []
     train_chi = []
     precision = np.cov(predictions.T)
-    for j, train_ind in enumerate(bootstrap_index_list):
-        test_ind = np.setdiff1d(all_indices,train_ind)
+    for j, test_ind in enumerate(bootstrap_index_list):  # The test indices are input as the kfold splits of the data.
+        train_ind = np.setdiff1d(all_indices,test_ind)  # The train data is ALL the rest of the data.  Thus, train > test.
+        test_data = predictions[test_ind].copy()
+        train_data = predictions[train_ind].copy()
         num_local_block = 2
         local_bootstrap_index_list = np.array_split(np.arange(len(train_ind)),num_local_block)
 
         if prior == "gaussian":
-            S = Gaussian_LVBP(predictions[train_ind],measurements,uncertainties,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
+            S = Gaussian_LVBP(train_data,measurements,uncertainties,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
         elif prior == "maxent":
-            S = MaxEnt_LVBP(predictions[train_ind],measurements,uncertainties,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
+            S = MaxEnt_LVBP(train_data,measurements,uncertainties,regularization_strength,local_bootstrap_index_list,precision=precision,uniform_prior_pops=True)
 
         S.test_chi_observable = pymc.Lambda("test_chi_observable", 
-                                          lambda alpha=S.alpha: chi2(populations(alpha, predictions[test_ind]), predictions[test_ind], measurements, uncertainties))
+                                          lambda alpha=S.alpha: chi2(populations(alpha, test_data), test_data, measurements, uncertainties))
         S.train_chi_observable = pymc.Lambda("train_chi_observable", 
-                                           lambda pi=S.pi,mu=S.mu: chi2(pi, predictions[train_ind], measurements, uncertainties, mu=mu))
+                                           lambda pi=S.pi,mu=S.mu: chi2(pi, train_data, measurements, uncertainties, mu=mu))
                                            
         S.sample(num_samples,thin=thin)
         test_chi.append(S.S.trace("test_chi_observable")[:].mean())
