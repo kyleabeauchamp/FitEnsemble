@@ -17,7 +17,7 @@ import abc
 import numpy as np
 import scipy.io,scipy.optimize, scipy.misc,scipy.linalg,scipy.sparse
 import pymc
-from ensemble import Ensemble, get_prior_pops, get_chi2, sample_prior_pops
+from ensemble import Ensemble, get_prior_pops, get_chi2
 
 
 def get_populations(alpha, predictions, prior_pops=None):
@@ -53,7 +53,7 @@ def get_populations(alpha, predictions, prior_pops=None):
     else:
         populations /= populations_sum
 
-    return populations_sum
+    return populations
     
 
 class LVBP(Ensemble):
@@ -74,7 +74,7 @@ class LVBP(Ensemble):
         prior_pops : ndarray, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pop=prior_pops)
+        Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
             
     def initialize_variables(self):
         """Must be called by any subclass of LVBP; initializes MCMC variables."""        
