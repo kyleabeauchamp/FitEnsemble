@@ -15,7 +15,7 @@ U(x_i) = \sum_j alpha[i] predictions[j,i]
 """
 import abc
 import numpy as np
-import scipy.io,scipy.optimize, scipy.misc,scipy.linalg,scipy.sparse
+import scipy.sparse
 import pymc
 from ensemble import Ensemble, get_prior_pops, get_chi2
 
@@ -103,7 +103,7 @@ class LVBP(Ensemble):
         rms: float
             RMS error of model over MCMC trace.        
         """
-        a0 = self.S.trace("alpha")[:]        
+        a0 = self.mcmc.trace("alpha")[:]        
         p = np.zeros(self.num_frames)
         rms_trace = []
         for i, a in enumerate(a0):

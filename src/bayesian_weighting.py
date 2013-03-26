@@ -7,8 +7,6 @@ Note: we have chosen to use a Dirichlet prior for the population vector.
 import numpy as np
 import pymc
 from ensemble import Ensemble
-
-
     
 def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
     """Return the chi squared objective function.
@@ -36,14 +34,21 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
 
     return np.linalg.norm(delta)**2.
 
+
 class BayesianWeighting(Ensemble):
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
         Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        self.initialize_variables()
 
     def initialize_variables(self):
         """Initializes MCMC variables."""
-        self.populations = pymc.Dirichlet("prior_dirichlet", np.ones(self.num_frames))
-                
+        self.dirichlet = pymc.Dirichlet("dirichlet", np.ones(self.num_frames))  # This has size (n-1), so it is missing the final component.  
+        self.matrix_populations = pymc.CompletedDirichlet("matrix_populations",self.dirichlet)  # This RV fills in the missing value of the population vector, but has shape (1, n) rather than (n)
+        self.populations = pymc.CommonDeterministics.Index("populations",self.matrix_populations, 0)  # Finally, we get a flat array of the populations.
+
+        self.dirichlet.keep_trace = False
+        #self.matrix_populations.keep_trace = False
+        
         @pymc.dtrm
         def mu(populations=self.populations):
             return populations.dot(self.predictions)

@@ -133,6 +133,6 @@ class Ensemble():
         else:
             db = "hdf5"
             
-        self.S = pymc.MCMC(self,db=db, dbname=filename)
-        self.S.sample(num_samples, thin=thin, burn=burn)
+        self.mcmc = pymc.MCMC(self,db=db, dbname=filename)
+        self.mcmc.sample(num_samples, thin=thin, burn=burn)
         
