@@ -1,13 +1,15 @@
 """
+An implementation of the LVBP approach outlined in Beauchamp, JACS. 2013.  
 
 Most functions in this module take three inputs: alpha, predictions, and measurements.
-All these functions share a common model framework.  We have run a simulation
-and calculated a set of observables at each conformation.  Thus, predictions[j,i]
-gives the ith predicted observable at frame j.  We assume that our 
-experimental data consists of n equilibrium measurements--the ith experiment
-is stored in measurements[i].  Finally, alpha is a vector of coupling parameters 
-that will be used to reweight the simulation value using a biasing potential 
-that is linear in the predicted observables: 
+Thus, predictions[j,i] gives the ith predicted observable at frame j.  The ith 
+equilibrium experiment is stored in measurements[i].  Similarly, uncertainties[i]
+contains an estimate of the uncertainty in the ith measurement.  In practice, we 
+use uncertainties[i] to model *both* the experimental uncertainty and the 
+prediction uncertainty associated with predicting experimental observables.  
+
+Below, alpha is a vector of coupling parameters that will be used to reweight
+ the simulation value using a biasing potential that is linear in the predicted observables: 
 U(x_i) = \sum_j alpha[i] predictions[j,i]
 
 """
@@ -15,29 +17,8 @@ import abc
 import numpy as np
 import scipy.io,scipy.optimize, scipy.misc,scipy.linalg,scipy.sparse
 import pymc
+from ensemble import Ensemble, get_prior_pops, get_chi2, sample_prior_pops
 
-def get_prior_pops(num_frames, prior_pops=None):
-    """Returns a uniform population vector if prior_pops is None.
-
-    Parameters
-    ----------
-    num_frames : int
-        Number of conformations
-    prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.   
-
-    Returns
-    -------
-    prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation
-    """
-    
-    if prior_pops != None:
-        return prior_pops
-    else:
-        prior_pops = np.ones(num_frames)
-        prior_pops /= prior_pops.sum()
-        return prior_pops
 
 def get_populations(alpha, predictions, prior_pops=None):
     """Return the reweighted conformational populations.
@@ -74,72 +55,8 @@ def get_populations(alpha, predictions, prior_pops=None):
 
     return populations_sum
     
-def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
-    """Return the chi squared objective function.
 
-    Parameters
-    ----------
-    alpha : ndarray, shape = (num_measurements)
-        Biasing weights for each experiment.
-    predictions : ndarray, shape = (num_frames, num_measurements)
-        predictions[j, i] gives the ith observabled predicted at frame j
-    prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.       
-
-    Returns
-    -------
-    populations : ndarray, shape = (num_frames)
-        Reweighted populations of each conformation
-
-    """
-
-    if mu == None:
-        mu = predictions.T.dot(populations)
-    
-    delta = (measurements - mu) / uncertainties
-
-    return np.linalg.norm(delta)**2.
-
-def sample_prior_pops(num_frames, bootstrap_index_list):
-    """Sample the prior populations using a Dirchlet random variable.
-
-    Parameters
-    ----------
-    num_frames : int
-        Number of conformations
-    bootstrap_index_list : list([ndarray])
-        List of arrays of frame indices.  The indices in bootstrap_index_list[i]
-        will be perturbed together
-
-    Returns
-    -------
-    prior_populations : ndarray, shape = (num_frames)
-        Prior populations of each conformation
-        
-    Notes
-    -------
-    This function allows you to perform Bayesian bootstrapping by modifying 
-    the prior populations attached to each frame.  Because molecular dynamics
-    frames are time correlated, one must first divide the dataset into
-    temporal blocks.  A dirichlet random variable is then drawn to modify the prior
-    populations blockwise.
-
-    """
-    num_blocks = len(bootstrap_index_list)
-
-    prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(num_blocks))  # Draw a dirichlet
-
-    block_pops = np.zeros(num_blocks)
-    block_pops[:-1] = prior_dirichlet[:]  # The pymc Dirichlet does not explicitly store the final component
-    block_pops[-1] = 1.0 - block_pops.sum()  # Calculate the final component from normalization.
-
-    prior_populations = np.ones(num_frames)
-    for k,ind in enumerate(bootstrap_index_list):
-        prior_populations[ind] = block_pops[k] / len(ind)
-    
-    return prior_populations        
-
-class LVBP():
+class LVBP(Ensemble):
     """Abstract base class for Linear Virtual Biasing Potential."""
     __metaclass__ = abc.ABCMeta
     
@@ -157,16 +74,7 @@ class LVBP():
         prior_pops : ndarray, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        self.uncertainties = uncertainties
-        self.predictions = predictions
-        self.measurements = measurements        
-        
-        self.num_frames, self.num_measurements = predictions.shape
-                          
-        if prior_pops == None:
-            self.prior_pops = np.ones(self.num_frames) / float(self.num_frames)
-        else:
-            self.prior_pops = prior_pops
+        Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pop=prior_pops)
             
     def initialize_variables(self):
         """Must be called by any subclass of LVBP; initializes MCMC variables."""        
@@ -185,19 +93,6 @@ class LVBP():
             return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties,mu=mu)
         self.logp = logp
                 
-    def sample(self, num_samples, thin=1, burn=0,save_pops=False,filename = None):
-        """Construct MCMC object and begin sampling."""
-        if save_pops == False:
-            self.populations.keep_trace = False
-        
-        if filename == None:
-            db = "ram"
-        else:
-            db = "hdf5"
-            
-        self.S = pymc.MCMC(self,db=db, dbname=filename)
-        self.S.sample(num_samples, thin=thin, burn=burn)
-        
     def accumulate_populations(self):
         """Accumulate populations and RMS error over MCMC trace.
 
@@ -242,12 +137,12 @@ class MVN_LVBP(LVBP):
         prior_pops : ndarray, optional, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        LVBP.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
+        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
         
         if precision == None:
             precision = np.cov(predictions.T)
             if precision.ndim == 0:
-                precision = precision.reshape((1,1))
+                precision = precision.reshape((1, 1))
 
         self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength)
         self.initialize_variables()
