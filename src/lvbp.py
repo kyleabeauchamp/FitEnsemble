@@ -17,7 +17,7 @@ import abc
 import numpy as np
 import scipy.sparse
 import pymc
-from ensemble import Ensemble, get_prior_pops, get_chi2
+from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
 
 
 def get_populations(alpha, predictions, prior_pops=None):
@@ -56,7 +56,7 @@ def get_populations(alpha, predictions, prior_pops=None):
     return populations
     
 
-class LVBP(Ensemble):
+class LVBP(EnsembleFitter):
     """Abstract base class for Linear Virtual Biasing Potential."""
     __metaclass__ = abc.ABCMeta
     
@@ -74,7 +74,7 @@ class LVBP(Ensemble):
         prior_pops : ndarray, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        EnsembleFitter.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
             
     def initialize_variables(self):
         """Must be called by any subclass of LVBP; initializes MCMC variables."""        
@@ -94,27 +94,22 @@ class LVBP(Ensemble):
         self.logp = logp
                 
     def accumulate_populations(self):
-        """Accumulate populations and RMS error over MCMC trace.
+        """Accumulate populations over MCMC trace.
 
         Returns
         -------
         p : ndarray, shape = (num_frames)
             Maximum a posteriori populations of each conformation
-        rms: float
-            RMS error of model over MCMC trace.        
         """
         a0 = self.mcmc.trace("alpha")[:]        
         p = np.zeros(self.num_frames)
-        rms_trace = []
         for i, a in enumerate(a0):
             populations = get_populations(a, self.predictions, self.prior_pops)
             p += populations
-            rms_trace.append((get_chi2(populations, self.predictions, self.measurements, self.uncertainties) / float(self.num_measurements)) ** 0.5)
             
         p /= p.sum()
-        rms = np.mean(rms_trace)
 
-        return p, rms
+        return p
 
 class MVN_LVBP(LVBP):
     """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
@@ -149,7 +144,7 @@ class MVN_LVBP(LVBP):
 
 class MaxEnt_LVBP(LVBP):
     """Linear Virtual Biasing Potential with maximum entropy prior."""
-    def __init__(self,predictions,measurements,uncertainties,regularization_strength,prior_pops=None):
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength, prior_pops=None):
         """Linear Virtual Biasing Potential with maximum entropy prior.
 
         Parameters
@@ -270,9 +265,9 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, regularizatio
         train_data = predictions[train_ind].copy()        
 
         if prior == "gaussian":
-            S = MVN_LVBP(train_data,measurements,uncertainties,regularization_strength,precision=precision,uniform_prior_pops=True)
+            S = MVN_LVBP(train_data, measurements, uncertainties, regularization_strength, precision=precision)
         elif prior == "maxent":
-            S = MaxEnt_LVBP(train_data,measurements,uncertainties,regularization_strength,precision=precision,uniform_prior_pops=True)
+            S = MaxEnt_LVBP(train_data, measurements, uncertainties, regularization_strength)
 
         S.test_chi_observable = pymc.Lambda("test_chi_observable", 
                                           lambda alpha=S.alpha: get_chi2(get_populations(alpha, test_data), test_data, measurements, uncertainties))
@@ -280,8 +275,8 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, regularizatio
                                            lambda populations=S.populations,mu=S.mu: get_chi2(populations, train_data, measurements, uncertainties, mu=mu))
                                            
         S.sample(num_samples,thin=thin)
-        test_chi.append(S.S.trace("test_chi_observable")[:].mean())
-        train_chi.append(S.S.trace("train_chi_observable")[:].mean())
+        test_chi.append(S.mcmc.trace("test_chi_observable")[:].mean())
+        train_chi.append(S.mcmc.trace("train_chi_observable")[:].mean())
 
     test_chi = np.array(test_chi)
     train_chi = np.array(train_chi)

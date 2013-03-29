@@ -6,7 +6,7 @@ Note: we have chosen to use a Dirichlet prior for the population vector.
 """
 import numpy as np
 import pymc
-from ensemble import Ensemble
+from ensemble_fitter import EnsembleFitter
     
 def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
     """Return the chi squared objective function.
@@ -35,9 +35,9 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
     return np.linalg.norm(delta)**2.
 
 
-class BayesianWeighting(Ensemble):
+class BayesianWeighting(EnsembleFitter):
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
-        Ensemble.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        EnsembleFitter.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
         self.initialize_variables()
 
     def initialize_variables(self):

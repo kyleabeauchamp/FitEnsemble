@@ -94,7 +94,7 @@ def sample_prior_pops(num_frames, bootstrap_index_list):
     
     return prior_populations        
 
-class Ensemble():
+class EnsembleFitter():
     """Abstract base class for Linear Virtual Biasing Potential."""
     __metaclass__ = abc.ABCMeta
     
@@ -116,12 +116,8 @@ class Ensemble():
         self.predictions = predictions
         self.measurements = measurements        
         
-        self.num_frames, self.num_measurements = predictions.shape
-                          
-        if prior_pops == None:
-            self.prior_pops = np.ones(self.num_frames) / float(self.num_frames)
-        else:
-            self.prior_pops = prior_pops
+        self.num_frames, self.num_measurements = predictions.shape        
+        self.prior_pops = get_prior_pops(self.num_frames, prior_pops)
                             
     def sample(self, num_samples, thin=1, burn=0,save_pops=False,filename = None):
         """Construct MCMC object and begin sampling."""
@@ -133,6 +129,6 @@ class Ensemble():
         else:
             db = "hdf5"
             
-        self.mcmc = pymc.MCMC(self,db=db, dbname=filename)
+        self.mcmc = pymc.MCMC(self, db=db, dbname=filename)
         self.mcmc.sample(num_samples, thin=thin, burn=burn)
         
