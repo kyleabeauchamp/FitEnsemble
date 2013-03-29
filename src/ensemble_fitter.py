@@ -6,6 +6,9 @@ import abc
 import numpy as np
 import pymc
 
+def reduced_chi_squared(predictions, measurements, uncertainties):
+    return np.mean(((predictions.mean(0) - measurements) / uncertainties)**2)
+
 def get_prior_pops(num_frames, prior_pops=None):
     """Returns a uniform population vector if prior_pops is None.
 

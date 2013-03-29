@@ -26,7 +26,7 @@ S.state_pops = pymc.Lambda("state_pops",lambda populations=S.populations: np.arr
 S.sample(num_samples, thin=thin, burn=burn, filename=pymc_filename)
 
 #  Calculate the maximum a posteriori conformational populations.
-p,rms = S.accumulate_populations()
+p = S.accumulate_populations()
 
 print("Reduced chi squared of raw MD: %f" % np.mean(((predictions.mean(0) - measurements) / uncertainties)**2))
 print("Reduced chi squared of LVBP: %f" % np.mean(((predictions.T.dot(p) - measurements) / uncertainties)**2))
