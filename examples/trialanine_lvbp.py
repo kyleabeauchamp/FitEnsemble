@@ -32,6 +32,15 @@ print("Reduced chi squared of raw MD: %f" % np.mean(((predictions.mean(0) - meas
 print("Reduced chi squared of LVBP: %f" % np.mean(((predictions.T.dot(p) - measurements) / uncertainties)**2))
 
 
+#  Check the MCMC trace of alpha for convergence
+
+a0 = S.mcmc.trace("alpha")[:,0]
+plt.plot(a0)
+plt.title("MCMC trace of alpha")
+
+
+#  Look at the conformational properties of the raw and LVBP models
+
 h,x,y = np.histogram2d(phi,psi, bins=100)
 extent = [-180,180,-180,180]
 plt.figure()

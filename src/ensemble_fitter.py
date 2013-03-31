@@ -135,3 +135,12 @@ class EnsembleFitter():
         self.mcmc = pymc.MCMC(self, db=db, dbname=filename)
         self.mcmc.sample(num_samples, thin=thin, burn=burn)
         
+    def load(self, filename):
+        """Load a previous MCMC trace from a PyTables HDF5 file.
+        
+        Parameters
+        ----------
+        filename : string
+            The filename for a previous run fit_ensemble MCMC trace.        
+        """
+        self.mcmc = pymc.database.hdf5.load(filename)
