@@ -1,6 +1,8 @@
 import numpy as np
 import pkg_resources
 
+subsample = 3  # By default, subsample ALA3 to make calculations faster for tutorial.
+
 def assign_states(phi,psi):
     """
     Notes:
@@ -36,8 +38,7 @@ def J3_HN_HA(phi):
 
     return A * np.cos(phi + phi0) ** 2. + B * np.cos(phi + phi0) + C
 
-def load_alanine(subsample=1):
-    keys = np.array(["J3_HN_HA"])
+def load_alanine(subsample=subsample):
     measurements = np.array([5.68])  # J coupling from Baldwin, PNAS 2006.  Table 1. Carbon CS from Joanna Long, 2004.
 
     dih_filename = pkg_resources.resource_filename("fit_ensemble","example_data/rama.npz")
@@ -48,9 +49,9 @@ def load_alanine(subsample=1):
     
     predictions = np.array([J]).T
     
-    return keys, measurements, predictions[::subsample], uncertainties
+    return measurements, predictions[::subsample], uncertainties
 
-def load_alanine_dihedrals(subsample=1):
+def load_alanine_dihedrals(subsample=subsample):
     dih_filename = pkg_resources.resource_filename("fit_ensemble","example_data/rama.npz")
     phi, psi = np.load(dih_filename)["arr_0"]
     
