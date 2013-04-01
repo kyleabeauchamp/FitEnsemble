@@ -114,6 +114,13 @@ class EnsembleFitter():
             uncertainties[i] gives the uncertainty of the ith experiment
         prior_pops : ndarray, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
+            
+        Notes
+        -----
+        
+        In subclasses of EnsembleFitter (e.g. LVBP), the __init__() function 
+        should take predictions, measurements, and uncertainties as arguments.
+        Any additional inputs *must* have default values.  
         """
         self.uncertainties = uncertainties
         self.predictions = predictions
@@ -133,9 +140,31 @@ class EnsembleFitter():
             db = "hdf5"
             
         self.mcmc = pymc.MCMC(self, db=db, dbname=filename)
+        self.save(db)
         self.mcmc.sample(num_samples, thin=thin, burn=burn)
         
-    def load(self, filename):
+    def save(self, db):
+        if db != "hdf5":
+            return
+        from tables import Float32Atom, Filters
+        COMPRESSION = Filters(complevel=9, complib='blosc', shuffle=True)
+        F = self.mcmc.db._h5file
+
+        F.createCArray("/", "predictions", Float32Atom(), self.predictions.shape, filters=COMPRESSION)
+        F.root.predictions[:] = self.predictions
+        
+        F.createCArray("/", "measurements", Float32Atom(), self.measurements.shape, filters=COMPRESSION)
+        F.root.measurements[:] = self.measurements
+
+        F.createCArray("/", "uncertainties", Float32Atom(), self.uncertainties.shape, filters=COMPRESSION)
+        F.root.uncertainties[:] = self.uncertainties
+
+        F.createCArray("/", "prior_pops", Float32Atom(), self.prior_pops.shape, filters=COMPRESSION)
+        F.root.prior_pops[:] = self.prior_pops
+
+        
+    @classmethod
+    def load(cls, filename):
         """Load a previous MCMC trace from a PyTables HDF5 file.
         
         Parameters
@@ -143,4 +172,16 @@ class EnsembleFitter():
         filename : string
             The filename for a previous run fit_ensemble MCMC trace.        
         """
-        self.mcmc = pymc.database.hdf5.load(filename)
+        
+        mcmc = pymc.database.hdf5.load(filename)
+
+        F = mcmc._h5file
+        predictions = F.root.predictions[:]
+        measurements = F.root.measurements[:]
+        uncertainties = F.root.uncertainties[:]
+        prior_pops = F.root.prior_pops[:]
+        
+        ensemble_fitter = cls(predictions, measurements, uncertainties, prior_pops=prior_pops)
+        ensemble_fitter.mcmc = mcmc
+
+        return ensemble_fitter

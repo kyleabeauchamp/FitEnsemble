@@ -135,7 +135,7 @@ class LVBP(EnsembleFitter):
 class MVN_LVBP(LVBP):
     """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
 
-    def __init__(self, predictions, measurements, uncertainties, regularization_strength, precision=None, prior_pops=None):
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
         """Linear Virtual Biasing Potential with MultiVariate Normal Prior.
 
         Parameters
@@ -165,7 +165,7 @@ class MVN_LVBP(LVBP):
 
 class MaxEnt_LVBP(LVBP):
     """Linear Virtual Biasing Potential with maximum entropy prior."""
-    def __init__(self, predictions, measurements, uncertainties, regularization_strength, prior_pops=None):
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
         """Linear Virtual Biasing Potential with maximum entropy prior.
 
         Parameters
@@ -200,7 +200,7 @@ class MaxEnt_LVBP(LVBP):
 
 class Jeffreys_LVBP(LVBP):
     """Linear Virtual Biasing Potential with Jeffrey's prior."""
-    def __init__(self, predictions, measurements, uncertainties, uniform_prior_pops=True, weights_alpha=None):
+    def __init__(self, predictions, measurements, uncertainties, prior_pops=None, weights_alpha=None):
         """Linear Virtual Biasing Potential with Jeffrey's prior.
 
         Parameters
@@ -214,7 +214,7 @@ class Jeffreys_LVBP(LVBP):
         prior_pops : ndarray, optional, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        LVBP.__init__(self, predictions, measurements, uncertainties, uniform_prior_pops=uniform_prior_pops)
+        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))
         self.initialize_variables()
@@ -226,7 +226,7 @@ class Jeffreys_LVBP(LVBP):
 
 class MaxEnt_Correlation_Corrected_LVBP(LVBP):
     """Linear Virtual Biasing Potential with maximum entropy prior and correlation-corrected likelihood."""
-    def __init__(self, predictions, measurements, uncertainties, regularization_strength, precision=None, prior_pops=None):
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
         """Linear Virtual Biasing Potential with maximum entropy prior and correlation-corrected likelihood.
 
         Parameters
