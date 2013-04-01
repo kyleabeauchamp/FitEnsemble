@@ -111,6 +111,27 @@ class LVBP(EnsembleFitter):
 
         return p
 
+    def trace_observable(self, observable_features):
+        """Calculate an function for each sample in the MCMC trace.
+
+        Parameters
+        ----------
+        observable_features : ndarray, shape = (num_frames, num_features)
+            observable_features[j, i] gives the ith feature of frame j
+
+        Returns
+        -------
+        observable : ndarray, shape = (num_samples, num_features)
+            The trace of the ensemble average observable for each MCMC sample.
+        """
+        a0 = self.mcmc.trace("alpha")[:]        
+        observable = np.zeros((a0.shape[0], observable_features.shape[1]))
+        for i, a in enumerate(a0):
+            populations = get_populations(a, self.predictions, self.prior_pops)
+            observable[i] = observable_features.T.dot(populations)
+
+        return observable
+
 class MVN_LVBP(LVBP):
     """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
 
