@@ -58,3 +58,7 @@ class BayesianWeighting(EnsembleFitter):
         def logp(populations=self.populations,mu=self.mu):
             return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties,mu=mu)
         self.logp = logp
+        
+    def iterate_populations(self):
+        for i, pi in enumerate(self.mcmc.trace("matrix_populations")):
+            yield pi[0]  # We have some shape issues from using Dirichlets.

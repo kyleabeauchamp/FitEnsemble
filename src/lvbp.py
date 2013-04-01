@@ -92,46 +92,14 @@ class LVBP(EnsembleFitter):
         def logp(populations=self.populations,mu=self.mu):
             return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties,mu=mu)
         self.logp = logp
-                
-    def accumulate_populations(self):
-        """Accumulate populations over MCMC trace.
 
-        Returns
-        -------
-        p : ndarray, shape = (num_frames)
-            Maximum a posteriori populations of each conformation
-        """
-        a0 = self.mcmc.trace("alpha")[:]        
-        p = np.zeros(self.num_frames)
-        for i, a in enumerate(a0):
-            populations = get_populations(a, self.predictions, self.prior_pops)
-            p += populations
-            
-        p /= p.sum()
+    def iterate_populations(self):
+        alpha_trace = self.mcmc.trace("alpha")[:]        
+        for i, alpha in enumerate(alpha_trace):
+            populations = get_populations(alpha, self.predictions, self.prior_pops)
+            yield populations
 
-        return p
-
-    def trace_observable(self, observable_features):
-        """Calculate an function for each sample in the MCMC trace.
-
-        Parameters
-        ----------
-        observable_features : ndarray, shape = (num_frames, num_features)
-            observable_features[j, i] gives the ith feature of frame j
-
-        Returns
-        -------
-        observable : ndarray, shape = (num_samples, num_features)
-            The trace of the ensemble average observable for each MCMC sample.
-        """
-        a0 = self.mcmc.trace("alpha")[:]        
-        observable = np.zeros((a0.shape[0], observable_features.shape[1]))
-        for i, a in enumerate(a0):
-            populations = get_populations(a, self.predictions, self.prior_pops)
-            observable[i] = observable_features.T.dot(populations)
-
-        return observable
-
+        
 class MVN_LVBP(LVBP):
     """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
 

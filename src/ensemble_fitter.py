@@ -144,24 +144,69 @@ class EnsembleFitter():
         self.mcmc.sample(num_samples, thin=thin, burn=burn)
         
     def save(self, db):
+        """Save the input data to disk.
+        
+        Notes
+        -----
+        Saves predictions, measurements, observables, and prior_pops to the 
+        HDF5 PyMC database.  
+        """
+
         if db != "hdf5":
             return
+
         from tables import Float32Atom, Filters
-        COMPRESSION = Filters(complevel=9, complib='blosc', shuffle=True)
+        compression = Filters(complevel=9, complib='blosc', shuffle=True)
         F = self.mcmc.db._h5file
 
-        F.createCArray("/", "predictions", Float32Atom(), self.predictions.shape, filters=COMPRESSION)
+        F.createCArray("/", "predictions", Float32Atom(), self.predictions.shape, filters=compression)
         F.root.predictions[:] = self.predictions
         
-        F.createCArray("/", "measurements", Float32Atom(), self.measurements.shape, filters=COMPRESSION)
+        F.createCArray("/", "measurements", Float32Atom(), self.measurements.shape, filters=compression)
         F.root.measurements[:] = self.measurements
 
-        F.createCArray("/", "uncertainties", Float32Atom(), self.uncertainties.shape, filters=COMPRESSION)
+        F.createCArray("/", "uncertainties", Float32Atom(), self.uncertainties.shape, filters=compression)
         F.root.uncertainties[:] = self.uncertainties
 
-        F.createCArray("/", "prior_pops", Float32Atom(), self.prior_pops.shape, filters=COMPRESSION)
+        F.createCArray("/", "prior_pops", Float32Atom(), self.prior_pops.shape, filters=compression)
         F.root.prior_pops[:] = self.prior_pops
 
+    def accumulate_populations(self):
+        """Accumulate populations over MCMC trace.
+
+        Returns
+        -------
+        p : ndarray, shape = (num_frames)
+            Maximum a posteriori populations of each conformation
+        """
+        p = np.zeros(self.num_frames)        
+
+        for pi in self.iterate_populations():
+            p += pi
+            
+        p /= p.sum()
+
+        return p
+
+    def trace_observable(self, observable_features):
+        """Calculate an function for each sample in the MCMC trace.
+
+        Parameters
+        ----------
+        observable_features : ndarray, shape = (num_frames, num_features)
+            observable_features[j, i] gives the ith feature of frame j
+
+        Returns
+        -------
+        observable : ndarray, shape = (num_samples, num_features)
+            The trace of the ensemble average observable for each MCMC sample.
+        """
+        observable = []
+
+        for p in self.iterate_populations():
+            observable.append(observable_features.T.dot(p))
+
+        return np.array(observable)
         
     @classmethod
     def load(cls, filename):
