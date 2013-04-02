@@ -8,13 +8,12 @@
 
 # <markdowncell>
 
-# Often, we would like to keep track of (i.e. `trace`) additional quantities while we sample the model likelihoods.  Tracing these quantities allows us to characterize the posterior distribution of arbitrary structural features.  For the case of tri-alanine, we would like to track the populations of each of the four conformational states.  To do so, we create a `pymc` random variable that monitors these populations.  By attaching this random variable as a member variable of our LVBP object, we can trace arbitrary random variables.  In this tutorial, we follow the same recipe as before, but add an extra random variable to output the populations of the $\alpha_r$, $\beta$, $PP_{II}$ $\;$, and $\alpha_l$ states.  
+# Often, we would like to keep track of (i.e. `trace`) additional quantities while we sample the model likelihoods.  Tracing these quantities allows us to characterize the posterior distribution of arbitrary structural features.  For the case of tri-alanine, we would like to track the populations of each of the four conformational states.  As before, we start by constructing and sampling an LVBP model.
 
 # <codecell>
 
 import numpy as np
 import pandas
-import pymc 
 import matplotlib.pyplot as plt
 from fit_ensemble import lvbp, example_loader
 

@@ -30,7 +30,6 @@
 # <codecell>
 
 import numpy as np
-import pymc 
 import matplotlib.pyplot as plt
 from fit_ensemble import lvbp, example_loader
 
