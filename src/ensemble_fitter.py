@@ -88,7 +88,7 @@ def sample_prior_pops(num_frames, bootstrap_index_list):
     prior_dirichlet = pymc.Dirichlet("prior_dirichlet", np.ones(num_blocks))  # Draw a dirichlet
 
     block_pops = np.zeros(num_blocks)
-    block_pops[:-1] = prior_dirichlet[:]  # The pymc Dirichlet does not explicitly store the final component
+    block_pops[:-1] = prior_dirichlet.value[:]  # The pymc Dirichlet does not explicitly store the final component
     block_pops[-1] = 1.0 - block_pops.sum()  # Calculate the final component from normalization.
 
     prior_populations = np.ones(num_frames)
