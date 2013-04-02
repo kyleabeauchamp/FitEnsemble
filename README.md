@@ -8,7 +8,7 @@ fit_ensemble
 fit_ensemble is a software package for constructing conformational ensembles
 by combining simulation and experiment.  
 
-fit_ensemble was developed by Kyle A. Beauchamp with the support of professors Rhiju Das and Vijay S. Pande.
+fit_ensemble was developed by Kyle A. Beauchamp with the support of professors Rhiju Das (http://www.stanford.edu/~rhiju/) and Vijay S. Pande (folding.stanford.edu/Pande).
 
 Links
 =====
