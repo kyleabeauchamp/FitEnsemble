@@ -31,7 +31,7 @@ go to the `tutorials` directory in the `fit_ensemble` directory.  Then type::
 A web browser should open to the IPython Notebook manager.  Four tutorials should be listed.  You 
 should complete the tutorials in order, as each tutorial extends the previous ones.
 
-.. _Tutorial1: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/tutorial/Tutorial1.ipynb
-.. _Tutorial2: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/tutorial/Tutorial2.ipynb
-.. _Tutorial3: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/tutorial/Tutorial3.ipynb
-.. _Tutorial4: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/tutorial/Tutorial4.ipynb
+.. _Tutorial1: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial1.ipynb
+.. _Tutorial2: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial2.ipynb
+.. _Tutorial3: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial3.ipynb
+.. _Tutorial4: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial4.ipynb

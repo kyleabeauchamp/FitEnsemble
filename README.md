@@ -14,6 +14,7 @@ Links
 =====
 
 - Source code: https://github.com/kyleabeauchamp/fit_ensemble
-- Documentation: https://fit_ensemble.readthedocs.org/en/latest
+- Documentation: http://fit_ensemble.readthedocs.org/en/latest
 
 Visit the documentation to get started!
+
