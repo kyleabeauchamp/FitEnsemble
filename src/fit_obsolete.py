@@ -22,7 +22,7 @@ conformation.
 import numpy as np
 import scipy.stats, scipy.io,scipy.optimize, scipy.misc
 
-import fit_ensemble
+import fitensemble
 
 def identify_outliers(f_sim,f_exp):
     outliers = []
@@ -51,7 +51,7 @@ def dlog_partition(alpha,f_sim,f_exp):
     the experimental observables.  
     
     """
-    pi = fit_ensemble.populations(alpha,f_sim,f_exp)
+    pi = fitensemble.populations(alpha,f_sim,f_exp)
     grad = f_sim.T.dot(pi)
     return grad
 

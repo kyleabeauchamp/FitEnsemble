@@ -1,26 +1,26 @@
 u"""
-setup.py: Install fit_ensemble.
+setup.py: Install FitEnsemble.
 """
 import setuptools
 
 metadata = {
-    "name" : "fit_ensemble",
+    "name" : "FitEnsemble",
     'version': "1.0.0",
     'author': "Kyle A. Beauchamp",
     'author_email': 'kyleabeauchamp@gmail.com',
     'license': 'GPL v3.0',
-    'url': 'https://github.com/kyleabeauchamp/fit_ensemble',
-    'download_url': 'https://github.com/kyleabeauchamp/fit_ensemble',
+    'url': 'https://github.com/kyleabeauchamp/FitEnsemble',
+    'download_url': 'https://github.com/kyleabeauchamp/FitEnsemble',
     'install_requires': ['scipy', 'numpy', 'pymc', 'tables'],
     'platforms': ["Linux", "Mac OS X"],
     "scripts" : ["bin/lvbp_run.py"],
-    "packages" : ["fit_ensemble"],
-    "package_dir" : {"fit_ensemble" : "src/"},
+    "packages" : ["fitensemble"],
+    "package_dir" : {"fitensemble" : "src/"},
     #"package_data" : {"src": ["test.txt"]},  # This doesn't work because of a character deletion bug in setuptools.
-    "data_files" : [("fit_ensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz"])],
+    "data_files" : [("fitensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz"])],
     "include_package_data" : True,
     'description': "Python code for inferring conformational ensembles.",
-    'long_description': """fit_ensemble  (https://github.com/kyleabeauchamp/fit_ensemble)
+    'long_description': """FitEnsemble  (https://github.com/kyleabeauchamp/FitEnsemble)
     is a library that allows scientists to combine simulation and experimental 
     data to infer the conformational ensemble of a protein."""
 }

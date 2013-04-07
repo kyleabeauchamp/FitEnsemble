@@ -41,7 +41,7 @@ def J3_HN_HA(phi):
 def load_alanine(subsample=subsample):
     measurements = np.array([5.68])  # J coupling from Baldwin, PNAS 2006.  Table 1. Carbon CS from Joanna Long, 2004.
 
-    dih_filename = pkg_resources.resource_filename("fit_ensemble","example_data/rama.npz")
+    dih_filename = pkg_resources.resource_filename("fitensemble","example_data/rama.npz")
     phi, psi = np.load(dih_filename)["arr_0"]
     J = J3_HN_HA(phi)
 
@@ -52,7 +52,7 @@ def load_alanine(subsample=subsample):
     return measurements, predictions[::subsample], uncertainties
 
 def load_alanine_dihedrals(subsample=subsample):
-    dih_filename = pkg_resources.resource_filename("fit_ensemble","example_data/rama.npz")
+    dih_filename = pkg_resources.resource_filename("fitensemble","example_data/rama.npz")
     phi, psi = np.load(dih_filename)["arr_0"]
     
     assignments = assign_states(phi,psi)
