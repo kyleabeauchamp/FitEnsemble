@@ -7,10 +7,10 @@ Tutorial
 :Release: |version|
 :Date: |today|
 
-Accessing the fit_ensemble Tutorials
+Accessing the FitEnsemble Tutorials
 ====================================
 
-The fit_ensemble tutorials take the form of a set of IPython notebooks.  
+The FitEnsemble tutorials take the form of a set of IPython notebooks.  
 To view these notebooks, you have two options.  
 
 First, you can view them on the web.  Viewing on the web allows you to see the results
@@ -23,15 +23,15 @@ The tutorials are available here:
 * Tutorial4_
 
 Alternatively, you can use IPython to interactively complete the tutorials.  
-This requires you to have successfully installed `fit_ensemble`.  After installation,
-go to the `tutorials` directory in the `fit_ensemble` directory.  Then type::
+This requires you to have successfully installed `FitEnsemble`.  After installation,
+go to the `tutorials` directory in the `FitEnsemble` directory.  Then type::
 
 	ipython notebook --pylab=inline
 
 A web browser should open to the IPython Notebook manager.  Four tutorials should be listed.  You 
 should complete the tutorials in order, as each tutorial extends the previous ones.
 
-.. _Tutorial1: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial1.ipynb
-.. _Tutorial2: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial2.ipynb
-.. _Tutorial3: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial3.ipynb
-.. _Tutorial4: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/fit_ensemble/master/tutorial/Tutorial4.ipynb
+.. _Tutorial1: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial1.ipynb
+.. _Tutorial2: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial2.ipynb
+.. _Tutorial3: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial3.ipynb
+.. _Tutorial4: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial4.ipynb

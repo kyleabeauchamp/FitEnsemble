@@ -1,9 +1,9 @@
-.. fit_ensemble documentation master file, created by
+.. FitEnsemble documentation master file, created by
    sphinx-quickstart on Sat Mar 30 20:35:16 2013.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-fit_ensemble
+FitEnsemble
 ============
 
 :Release: |version|
@@ -11,8 +11,8 @@ fit_ensemble
 
 
 
-`fit_ensemble` is a software package for modeling conformation ensembles of 
-macromolecules.  Using the linear virtual biasing potential (LVBP) formalism [R1]_, fit_ensemble infers 
+`FitEnsemble` is a software package for modeling conformation ensembles of 
+macromolecules.  Using the linear virtual biasing potential (LVBP) formalism [R1]_, FitEnsemble infers 
 conformational ensembles that best capture a set of experimental
 measurements.  
 

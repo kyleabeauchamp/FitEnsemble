@@ -13,7 +13,7 @@ metadata = {
     'download_url': 'https://github.com/kyleabeauchamp/FitEnsemble',
     'install_requires': ['scipy', 'numpy', 'pymc', 'tables'],
     'platforms': ["Linux", "Mac OS X"],
-    "scripts" : ["bin/lvbp_run.py"],
+    "scripts" : ["scripts/lvbp_run.py"],
     "packages" : ["fitensemble"],
     "package_dir" : {"fitensemble" : "src/"},
     #"package_data" : {"src": ["test.txt"]},  # This doesn't work because of a character deletion bug in setuptools.

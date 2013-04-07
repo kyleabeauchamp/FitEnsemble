@@ -8,7 +8,7 @@ Running via the Command Line
 :Date: |today|
 
 
-Running fit_ensemble via the command line
+Running FitEnsemble via the command line
 =========================================
 
 Help using this script is available at the command line:
@@ -24,7 +24,7 @@ Now we demonstrate a simple example for `lvbp_run.py` using the following comman
 
 This command loads the experimental data saved in ``measurements.dat``, the 
 uncertainties stored in ``uncertainties.dat``, and the predicted experimental
-observables in ``predictions.npz``.  In fit_ensemble, we assume that ``.dat`` 
+observables in ``predictions.npz``.  In FitEnsemble, we assume that ``.dat`` 
 files are arrays readable by ``numpy.loadtxt()``, while ``.npz`` files
 are arrays readable by ``numpy.load()``.
 

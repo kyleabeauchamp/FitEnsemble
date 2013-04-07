@@ -8,7 +8,7 @@ Installation
 Installation
 ============
 
-fit_ensemble requires Python 2.7 and the following Python packages:
+FitEnsemble requires Python 2.7 and the following Python packages:
 
 * Numpy_
 
@@ -22,9 +22,9 @@ The easiest way to install all prerequisites is using the Enthought_
 or Anaconda_ python distributions.  These environments 
 come with all prequisties except PyMC, which you must install manually.
 
-fit_ensemble is hosted on GitHub (https://github.com/kyleabeauchamp/fit_ensemble).  
+FitEnsemble is hosted on GitHub (https://github.com/kyleabeauchamp/FitEnsemble).  
 The latest version can be downloaded here: (XXX).  After unpacking the
-source code, you can install fit_ensemble with the following command::
+source code, you can install FitEnsemble with the following command::
    
     python setup.py install
 
