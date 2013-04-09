@@ -177,7 +177,7 @@ class EnsembleFitter():
         Returns
         -------
         p : ndarray, shape = (num_frames)
-            Maximum a posteriori populations of each conformation
+            Posterior averaged populations of each conformation
         """
         p = np.zeros(self.num_frames)        
 
