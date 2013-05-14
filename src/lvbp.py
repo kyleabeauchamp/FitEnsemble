@@ -18,9 +18,39 @@ import numpy as np
 import scipy.sparse
 import pymc
 from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
+import numexpr as ne
+
+def get_populations(q, predictions, prior_pops):
+    """Return the reweighted conformational populations.
+
+    Parameters
+    ----------
+    alpha : ndarray, shape = (num_measurements)
+        Biasing weights for each experiment.
+    predictions : ndarray, shape = (num_frames, num_measurements)
+        predictions[j, i] gives the ith observabled predicted at frame j
+    prior_pops : ndarray, shape = (num_frames)
+        Prior populations of each conformation.  If None, then use uniform pops.       
+
+    Returns
+    -------
+    populations : ndarray, shape = (num_frames)
+        Reweighted populations of each conformation
+
+    """
+    populations = ne.evaluate("exp(q) * prior_pops")
+    populations_sum = populations.sum()
+
+    if np.isfinite(populations_sum):
+        populations /= populations_sum
+    else:  # If we have NAN or inf issues, pick the frame with highest population.
+        populations.fill(0.0)
+        populations[q.argmax()] = 1.
+
+    return populations
 
 
-def get_populations(alpha, predictions, prior_pops=None):
+def get_populations_old(alpha, predictions, prior_pops=None):
     """Return the reweighted conformational populations.
 
     Parameters
@@ -78,9 +108,18 @@ class LVBP(EnsembleFitter):
             
     def initialize_variables(self):
         """Must be called by any subclass of LVBP; initializes MCMC variables."""        
+
         @pymc.dtrm
-        def populations(alpha=self.alpha,prior_pops=self.prior_pops):
-            return get_populations(alpha, self.predictions, prior_pops)        
+        def q(alpha=self.alpha, prior_pops=self.prior_pops):
+            q = self.predictions.dot(alpha)
+            q *= -1.
+            q -= q.mean()  # Improves numerical stability without changing populations.
+            return q
+        self.q = q
+
+        @pymc.dtrm
+        def populations(q=self.q, prior_pops=self.prior_pops):
+            return get_populations(q, self.predictions, prior_pops)        
         self.populations = populations
         
         @pymc.dtrm
@@ -90,7 +129,7 @@ class LVBP(EnsembleFitter):
 
         @pymc.potential
         def logp(populations=self.populations,mu=self.mu):
-            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties,mu=mu)
+            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
         self.logp = logp
 
     def iterate_populations(self):
@@ -156,13 +195,17 @@ class MaxEnt_LVBP(LVBP):
         
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
         self.initialize_variables()
+
+        self.log_prior_pops = np.log(self.prior_pops)
         
         @pymc.potential
-        def logp_prior(populations=self.populations, mu=self.mu, prior_pops=self.prior_pops):
+        def logp_prior(populations=self.populations, q=self.q, log_prior_pops=self.log_prior_pops):
             if populations.min() <= 0:
                 return -1 * np.inf
             else:
-                return -1 * regularization_strength * (populations * (np.log(populations / prior_pops))).sum()
+                expr = ne.evaluate("sum(populations  * (q - log_prior_pops))")
+                #(populations * (q - self.log_prior_pops)).sum()
+                return -1 * regularization_strength * expr
         self.logp_prior = logp_prior
 
 

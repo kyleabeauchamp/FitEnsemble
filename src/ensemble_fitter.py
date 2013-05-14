@@ -133,6 +133,7 @@ class EnsembleFitter():
         """Construct MCMC object and begin sampling."""
         if save_pops == False:
             self.populations.keep_trace = False
+            self.q.keep_trace = False
         
         if filename == None:
             db = "ram"
