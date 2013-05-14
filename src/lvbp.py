@@ -194,6 +194,8 @@ class MaxEnt_LVBP(LVBP):
         LVBP.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
         
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
+        self.alpha._cache_depth = 0
+        self.alpha.gen_lazy_function()
         self.initialize_variables()
 
         self.log_prior_pops = np.log(self.prior_pops)
