@@ -20,13 +20,38 @@ import pymc
 from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
 import numexpr as ne
 
-def get_populations(q, predictions, prior_pops):
-    """Return the reweighted conformational populations.
+def get_q(alpha, predictions):
+    """Project predictions onto alpha.
 
     Parameters
     ----------
     alpha : ndarray, shape = (num_measurements)
         Biasing weights for each experiment.
+    predictions : ndarray, shape = (num_frames, num_measurements)
+        predictions[j, i] gives the ith observabled predicted at frame j
+
+    Returns
+    -------
+    q : ndarray, shape = (num_frames)
+        q is -1.0 * predictions.dot(alpha)
+    Notes
+    -----
+    We also mean-subtract q, as this provides improved 
+    numerical stability.  
+    """
+    #q = predictions.dot(alpha)
+    q = predictions.dot(alpha.astype(predictions.dtype)).astype(alpha.dtype)  # Here, we assume that predictions are stored as float32, but alpha is a float64.  
+    q *= -1.
+    q -= q.mean()  # Improves numerical stability without changing populations.
+    return q
+
+def get_populations_from_q(q, predictions, prior_pops):
+    """Return the reweighted conformational populations.
+
+    Parameters
+    ----------
+    q : ndarray, shape = (num_frames)
+        q is -1.0 * predictions.dot(alpha)
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     prior_pops : ndarray, shape = (num_frames)
@@ -37,6 +62,10 @@ def get_populations(q, predictions, prior_pops):
     populations : ndarray, shape = (num_frames)
         Reweighted populations of each conformation
 
+    Notes
+    -----
+    We typically input the mean-subtracted q, as this provides improved 
+    numerical stability.  
     """
     populations = ne.evaluate("exp(q) * prior_pops")
     populations_sum = populations.sum()
@@ -49,8 +78,7 @@ def get_populations(q, predictions, prior_pops):
 
     return populations
 
-
-def get_populations_old(alpha, predictions, prior_pops=None):
+def get_populations_from_alpha(alpha, predictions, prior_pops):
     """Return the reweighted conformational populations.
 
     Parameters
@@ -60,7 +88,7 @@ def get_populations_old(alpha, predictions, prior_pops=None):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.       
+        Prior populations of each conformation. 
 
     Returns
     -------
@@ -68,23 +96,8 @@ def get_populations_old(alpha, predictions, prior_pops=None):
         Reweighted populations of each conformation
 
     """
-    num_frames = predictions.shape[0]
-    prior_pops = get_prior_pops(num_frames,prior_pops)
-    
-    q = -1 * predictions.dot(alpha)
-    q -= q.mean()  # Improves numerical stability without changing populations.
-    populations = np.exp(q)
-    populations *= prior_pops
-    populations_sum = populations.sum()
-
-    if np.isnan(populations_sum) or np.isinf(populations_sum):  # If we have NAN or inf issues, pick the frame with highest population.
-        populations = np.zeros(num_frames)
-        populations[q.argmax()] = 1.
-    else:
-        populations /= populations_sum
-
-    return populations
-    
+    q = get_q(alpha, predictions)
+    return get_populations_from_q(q, predictions, prior_pops)    
 
 class LVBP(EnsembleFitter):
     """Abstract base class for Linear Virtual Biasing Potential."""
@@ -111,20 +124,17 @@ class LVBP(EnsembleFitter):
 
         @pymc.dtrm
         def q(alpha=self.alpha, prior_pops=self.prior_pops):
-            q = self.predictions.dot(alpha)
-            q *= -1.
-            q -= q.mean()  # Improves numerical stability without changing populations.
-            return q
+            return get_q(alpha, self.predictions)
         self.q = q
 
         @pymc.dtrm
         def populations(q=self.q, prior_pops=self.prior_pops):
-            return get_populations(q, self.predictions, prior_pops)        
+            return get_populations_from_q(q, self.predictions, prior_pops)        
         self.populations = populations
         
         @pymc.dtrm
         def mu(populations=self.populations):
-            return populations.dot(self.predictions)
+            return populations.astype(self.predictions.dtype).dot(self.predictions).astype(populations.dtype)
         self.mu = mu
 
         @pymc.potential
@@ -133,11 +143,10 @@ class LVBP(EnsembleFitter):
         self.logp = logp
 
     def iterate_populations(self):
-        alpha_trace = self.mcmc.trace("alpha")[:]        
+        alpha_trace = self.mcmc.trace("alpha")[:]  # Assume we can load *all* alpha into memory.  I.e. num_measurements small.
         for i, alpha in enumerate(alpha_trace):
-            populations = get_populations(alpha, self.predictions, self.prior_pops)
+            populations = get_populations_from_alpha(alpha, self.predictions, self.prior_pops)
             yield populations
-
         
 class MVN_LVBP(LVBP):
     """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""

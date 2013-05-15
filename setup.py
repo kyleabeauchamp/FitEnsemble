@@ -15,8 +15,7 @@ metadata = {
     'platforms': ["Linux", "Mac OS X"],
     "scripts" : ["scripts/lvbp_run.py"],
     "packages" : ["fitensemble"],
-    "package_dir" : {"fitensemble" : "src/"},
-    #"package_data" : {"src": ["test.txt"]},  # This doesn't work because of a character deletion bug in setuptools.
+    "package_dir" : {"fitensemble" : "fitensemble/"},
     "data_files" : [("fitensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz"])],
     "include_package_data" : True,
     'description': "Python code for inferring conformational ensembles.",
