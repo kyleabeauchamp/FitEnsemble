@@ -39,8 +39,7 @@ def get_q(alpha, predictions):
     We also mean-subtract q, as this provides improved 
     numerical stability.  
     """
-    #q = predictions.dot(alpha)
-    q = predictions.dot(alpha.astype(predictions.dtype)).astype(alpha.dtype)  # Here, we assume that predictions are stored as float32, but alpha is a float64.  
+    q = predictions.dot(alpha)
     q *= -1.
     q -= q.mean()  # Improves numerical stability without changing populations.
     return q
@@ -134,7 +133,7 @@ class LVBP(EnsembleFitter):
         
         @pymc.dtrm
         def mu(populations=self.populations):
-            return populations.astype(self.predictions.dtype).dot(self.predictions).astype(populations.dtype)
+            return populations.dot(self.predictions)
         self.mu = mu
 
         @pymc.potential
