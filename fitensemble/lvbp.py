@@ -293,33 +293,34 @@ class MaxEnt_Correlation_Corrected_LVBP(LVBP):
         self.logp = logp
         
     
-def cross_validated_mcmc(predictions, measurements, uncertainties, regularization_strength, bootstrap_index_list, num_samples = 50000, thin=1, prior="maxent"):
+def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples = 50000, thin=1, prior="maxent"):
     all_indices = np.concatenate(bootstrap_index_list)
     test_chi = []
     train_chi = []
     precision = np.cov(predictions.T)
+    
     for j, test_ind in enumerate(bootstrap_index_list):  # The test indices are input as the kfold splits of the data.
         train_ind = np.setdiff1d(all_indices,test_ind)  # The train data is ALL the rest of the data.  Thus, train > test.
         test_data = predictions[test_ind].copy()
         train_data = predictions[train_ind].copy()        
 
-        if prior == "gaussian":
-            S = MVN_LVBP(train_data, measurements, uncertainties, regularization_strength, precision=precision)
-        elif prior == "maxent":
-            S = MaxEnt_LVBP(train_data, measurements, uncertainties, regularization_strength)
+        prior_pops = np.ones_like(test_data[:,0])
+        prior_pops /= prior_pops.sum()
+        
 
-        S.test_chi_observable = pymc.Lambda("test_chi_observable", 
-                                          lambda alpha=S.alpha: get_chi2(get_populations(alpha, test_data), test_data, measurements, uncertainties))
-        S.train_chi_observable = pymc.Lambda("train_chi_observable", 
-                                           lambda populations=S.populations,mu=S.mu: get_chi2(populations, train_data, measurements, uncertainties, mu=mu))
+        model = model_factory(train_data, measurements, uncertainties)
+
+        model.test_chi_observable = pymc.Lambda("test_chi_observable", 
+                                          lambda alpha=model.alpha: get_chi2(get_populations_from_alpha(alpha, test_data, prior_pops), test_data, measurements, uncertainties))
+        model.train_chi_observable = pymc.Lambda("train_chi_observable", 
+                                           lambda populations=model.populations,mu=model.mu: get_chi2(populations, train_data, measurements, uncertainties, mu=mu))
                                            
-        S.sample(num_samples,thin=thin)
-        test_chi.append(S.mcmc.trace("test_chi_observable")[:].mean())
-        train_chi.append(S.mcmc.trace("train_chi_observable")[:].mean())
+        model.sample(num_samples,thin=thin)
+        test_chi.append(model.mcmc.trace("test_chi_observable")[:].mean())
+        train_chi.append(model.mcmc.trace("train_chi_observable")[:].mean())
 
     test_chi = np.array(test_chi)
     train_chi = np.array(train_chi)
-    print regularization_strength, train_chi.mean(), test_chi.mean()
     return train_chi, test_chi
             
 def fisher_information(populations, predictions, mu):
