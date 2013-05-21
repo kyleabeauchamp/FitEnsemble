@@ -125,11 +125,13 @@ class LVBP(EnsembleFitter):
         def q(alpha=self.alpha, prior_pops=self.prior_pops):
             return get_q(alpha, self.predictions)
         self.q = q
+        self.q.keep_trace = False            
 
         @pymc.dtrm
         def populations(q=self.q, prior_pops=self.prior_pops):
             return get_populations_from_q(q, self.predictions, prior_pops)        
         self.populations = populations
+        self.populations.keep_trace = False        
         
         @pymc.dtrm
         def mu(populations=self.populations):

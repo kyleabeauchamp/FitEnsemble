@@ -129,12 +129,8 @@ class EnsembleFitter():
         self.num_frames, self.num_measurements = predictions.shape        
         self.prior_pops = get_prior_pops(self.num_frames, prior_pops)
                             
-    def sample(self, num_samples, thin=1, burn=0,save_pops=False,filename = None):
-        """Construct MCMC object and begin sampling."""
-        if save_pops == False:
-            self.populations.keep_trace = False
-            self.q.keep_trace = False
-        
+    def sample(self, num_samples, thin=1, burn=0, save_pops=False, filename = None):
+        """Construct MCMC object and begin sampling."""        
         if filename == None:
             db = "ram"
         else:
@@ -219,7 +215,7 @@ class EnsembleFitter():
             The filename for a previous run fit_ensemble MCMC trace.        
         """
         
-        mcmc = pymc.database.hdf5.load(filename)
+        mcmc = pymc.database.hdf5.load(filename, 'r')
 
         F = mcmc._h5file
         predictions = F.root.predictions[:]

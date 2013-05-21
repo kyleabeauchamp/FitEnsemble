@@ -36,29 +36,59 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
 
 
 class BayesianWeighting(EnsembleFitter):
-    def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
-        EnsembleFitter.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+    def __init__(self, predictions, measurements, uncertainties, state_assignments, prior_state_pops=None):
+        EnsembleFitter.__init__(self, predictions, measurements, uncertainties)
+        
+        self.state_assignments = state_assignments
+        self.num_states = len(np.unique(self.state_assignments))
+
+        if prior_state_pops is not None:
+            self.prior_state_pops = prior_state_pops
+        else:
+            #self.prior_state_pops = np.bincount(state_assignments).astype('float')
+            #self.prior_state_pops /= self.prior_state_pops.sum()
+            self.prior_state_pops = np.ones(self.num_states)
+
         self.initialize_variables()
 
     def initialize_variables(self):
-        """Initializes MCMC variables."""
-        self.dirichlet = pymc.Dirichlet("dirichlet", np.ones(self.num_frames))  # This has size (n-1), so it is missing the final component.  
-        self.matrix_populations = pymc.CompletedDirichlet("matrix_populations",self.dirichlet)  # This RV fills in the missing value of the population vector, but has shape (1, n) rather than (n)
-        self.populations = pymc.CommonDeterministics.Index("populations",self.matrix_populations, 0)  # Finally, we get a flat array of the populations.
+        """Initializes MCMC variables."""        
+        self.dirichlet = pymc.Dirichlet("dirichlet", self.prior_state_pops)  # This has size (n-1), so it is missing the final component.  
+        self.matrix_populations = pymc.CompletedDirichlet("matrix_populations", self.dirichlet)  # This RV fills in the missing value of the population vector, but has shape (1, n) rather than (n)
+        self.populations = pymc.CommonDeterministics.Index("populations", self.matrix_populations, 0)  # Finally, we get a flat array of the populations.
+        
+        self.predictions_statewise = np.array([self.predictions[self.state_assignments == i].mean(0) for i in np.arange(self.num_states)])
 
         self.dirichlet.keep_trace = False
         #self.matrix_populations.keep_trace = False
         
         @pymc.dtrm
         def mu(populations=self.populations):
-            return populations.dot(self.predictions)
+            return populations.dot(self.predictions_statewise)
         self.mu = mu
 
         @pymc.potential
         def logp(populations=self.populations,mu=self.mu):
-            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties,mu=mu)
+            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
         self.logp = logp
         
     def iterate_populations(self):
         for i, pi in enumerate(self.mcmc.trace("matrix_populations")):
             yield pi[0]  # We have some shape issues from using Dirichlets.
+
+    def accumulate_populations(self):
+        """Accumulate populations over MCMC trace.
+
+        Returns
+        -------
+        p : ndarray, shape = (num_states)
+            Posterior averaged populations of each conformation
+        """
+        p = np.zeros(self.num_states)        
+
+        for pi in self.iterate_populations():
+            p += pi
+            
+        p /= p.sum()
+
+        return p
