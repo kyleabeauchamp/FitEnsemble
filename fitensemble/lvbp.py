@@ -150,10 +150,10 @@ class LVBP(EnsembleFitter):
             yield populations
         
 class MVN_LVBP(LVBP):
-    """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
+    """Linear Virtual Biasing Potential with multivariate Normal Prior."""
 
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
-        """Linear Virtual Biasing Potential with MultiVariate Normal Prior.
+        """Linear Virtual Biasing Potential with multivariate Normal Prior.
 
         Parameters
         ----------
@@ -173,7 +173,7 @@ class MVN_LVBP(LVBP):
         LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
         
         if precision == None:
-            precision = np.cov(predictions.T)
+            precision = np.cov(self.predictions.T)
             if precision.ndim == 0:
                 precision = precision.reshape((1, 1))
 
@@ -201,7 +201,7 @@ class MaxEnt_LVBP(LVBP):
             Prior populations of each conformation.  If None, use uniform populations.        
         """
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
+        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
         
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
         self.initialize_variables()
@@ -236,12 +236,12 @@ class Jeffreys_LVBP(LVBP):
         """
         LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
-        self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))
+        self.alpha = pymc.Uninformative("alpha", value=np.zeros(self.num_measurements))
         self.initialize_variables()
                 
         @pymc.potential
         def logp_prior(populations=self.populations,mu=self.mu):
-            return log_jeffreys(populations,predictions,mu=mu)
+            return log_jeffreys(populations, self.predictions, mu=mu)
         self.logp_prior = logp_prior
 
 class MaxEnt_Correlation_Corrected_LVBP(LVBP):
@@ -268,7 +268,7 @@ class MaxEnt_Correlation_Corrected_LVBP(LVBP):
         LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
         if precision == None:
-            precision = np.cov(predictions.T)
+            precision = np.cov(self.predictions.T)
             if precision.ndim == 0:
                 precision = precision.reshape((1,1))        
         
@@ -283,7 +283,7 @@ class MaxEnt_Correlation_Corrected_LVBP(LVBP):
                 return -1 * regularization_strength * (populations * (np.log(populations / prior_pops))).sum()
         self.logp_prior = logp_prior
 
-        rho = np.corrcoef(predictions.T)
+        rho = np.corrcoef(self.predictions.T)
         rho_inverse = np.linalg.inv(rho)
         
         @pymc.potential
@@ -299,21 +299,21 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
     all_indices = np.concatenate(bootstrap_index_list)
     test_chi = []
     train_chi = []
-    precision = np.cov(predictions.T)
+    precision = np.cov(predictions.values.T)
     
     for j, test_ind in enumerate(bootstrap_index_list):  # The test indices are input as the kfold splits of the data.
         train_ind = np.setdiff1d(all_indices,test_ind)  # The train data is ALL the rest of the data.  Thus, train > test.
-        test_data = predictions[test_ind].copy()
-        train_data = predictions[train_ind].copy()        
+        test_data = predictions.iloc[test_ind].copy()
+        train_data = predictions.iloc[train_ind].copy()        
 
-        prior_pops = np.ones_like(test_data[:,0])
-        prior_pops /= prior_pops.sum()
+        test_prior_pops = np.ones_like(test_data.values[:,0])
+        test_prior_pops /= test_prior_pops.sum()
         
 
         model = model_factory(train_data, measurements, uncertainties)
 
         model.test_chi_observable = pymc.Lambda("test_chi_observable", 
-                                          lambda alpha=model.alpha: get_chi2(get_populations_from_alpha(alpha, test_data, prior_pops), test_data, measurements, uncertainties))
+                                          lambda alpha=model.alpha: get_chi2(get_populations_from_alpha(alpha, test_data, test_prior_pops), test_data, measurements, uncertainties))
         model.train_chi_observable = pymc.Lambda("train_chi_observable", 
                                            lambda populations=model.populations,mu=model.mu: get_chi2(populations, train_data, measurements, uncertainties, mu=mu))
                                            

@@ -5,6 +5,7 @@
 import abc
 import numpy as np
 import pymc
+import pandas as pd
 
 def reduced_chi_squared(predictions, measurements, uncertainties):
     return np.mean(((predictions.mean(0) - measurements) / uncertainties)**2)
@@ -106,13 +107,13 @@ class EnsembleFitter():
 
         Parameters
         ----------
-        predictions : ndarray, shape = (num_frames, num_measurements)
+        predictions : pandas.DataFrame, shape = (num_frames, num_measurements)
             predictions[j, i] gives the ith observabled predicted at frame j
-        measurements : ndarray, shape = (num_measurements)
+        measurements : pandas.Series, shape = (num_measurements)
             measurements[i] gives the ith experimental measurement
-        uncertainties : ndarray, shape = (num_measurements)
+        uncertainties : pandas.Series, shape = (num_measurements)
             uncertainties[i] gives the uncertainty of the ith experiment
-        prior_pops : ndarray, shape = (num_frames)
+        prior_pops : np.ndarray, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
             
         Notes
@@ -122,9 +123,12 @@ class EnsembleFitter():
         should take predictions, measurements, and uncertainties as arguments.
         Any additional inputs *must* have default values.  
         """
-        self.uncertainties = uncertainties
-        self.predictions = predictions
-        self.measurements = measurements        
+        self.uncertainties = uncertainties[predictions.columns].values
+        self.predictions = predictions.values
+        self.measurements = measurements[predictions.columns].values
+        
+        self.frame_indices = predictions.index
+        self.measurement_indices = predictions.columns
         
         self.num_frames, self.num_measurements = predictions.shape        
         self.prior_pops = get_prior_pops(self.num_frames, prior_pops)
@@ -152,21 +156,27 @@ class EnsembleFitter():
         if db != "hdf5":
             return
 
-        from tables import Float32Atom, Filters
-        compression = Filters(complevel=9, complib='blosc', shuffle=True)
+        import tables
+        compression = tables.Filters(complevel=9, complib='blosc', shuffle=True)
         F = self.mcmc.db._h5file
 
-        F.createCArray("/", "predictions", Float32Atom(), self.predictions.shape, filters=compression)
+        F.createCArray("/", "predictions", tables.Float32Atom(), self.predictions.shape, filters=compression)
         F.root.predictions[:] = self.predictions
         
-        F.createCArray("/", "measurements", Float32Atom(), self.measurements.shape, filters=compression)
+        F.createCArray("/", "measurements", tables.Float32Atom(), self.measurements.shape, filters=compression)
         F.root.measurements[:] = self.measurements
 
-        F.createCArray("/", "uncertainties", Float32Atom(), self.uncertainties.shape, filters=compression)
+        F.createCArray("/", "uncertainties", tables.Float32Atom(), self.uncertainties.shape, filters=compression)
         F.root.uncertainties[:] = self.uncertainties
 
-        F.createCArray("/", "prior_pops", Float32Atom(), self.prior_pops.shape, filters=compression)
+        F.createCArray("/", "prior_pops", tables.Float32Atom(), self.prior_pops.shape, filters=compression)
         F.root.prior_pops[:] = self.prior_pops
+        
+        F.createCArray("/", "measurement_indices", tables.StringAtom(50), self.measurement_indices.shape, filters=compression)
+        F.root.measurement_indices[:] = self.measurement_indices
+       
+        F.createCArray("/", "frame_indices", tables.Int64Atom(), self.prior_pops.shape, filters=compression)
+        F.root.frame_indices[:] = self.frame_indices       
 
     def accumulate_populations(self):
         """Accumulate populations over MCMC trace.
@@ -204,6 +214,14 @@ class EnsembleFitter():
             observable.append(observable_features.T.dot(p))
 
         return np.array(observable)
+
+    def get_data(self):
+        """Return the preditions, measurements, and uncertainties in Pandas format."""
+        predictions = pd.DataFrame(self.predictions, columns=self.measurement_indices, index=self.frame_indices)
+        measurements = pd.Series(self.measurements, index=self.measurement_indices)
+        uncertainties = pd.Series(self.uncertainties, index=self.measurement_indices)
+        
+        return predictions, measurements, uncertainties
         
     @classmethod
     def load(cls, filename):
@@ -222,6 +240,13 @@ class EnsembleFitter():
         measurements = F.root.measurements[:]
         uncertainties = F.root.uncertainties[:]
         prior_pops = F.root.prior_pops[:]
+        
+        measurement_indices = F.root.measurement_indices[:]
+        frame_indices = F.root.frame_indices[:]
+        
+        predictions = pd.DataFrame(predictions, columns=measurement_indices, index=frame_indices)
+        measurements = pd.Series(measurements, index=measurement_indices)
+        uncertainties = pd.Series(uncertainties, index=measurement_indices)        
         
         ensemble_fitter = cls(predictions, measurements, uncertainties, prior_pops=prior_pops)
         ensemble_fitter.mcmc = mcmc
