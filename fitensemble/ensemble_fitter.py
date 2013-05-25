@@ -5,6 +5,7 @@
 import abc
 import numpy as np
 import pymc
+import utils
 
 def reduced_chi_squared(predictions, measurements, uncertainties):
     return np.mean(((predictions.mean(0) - measurements) / uncertainties)**2)
@@ -122,6 +123,7 @@ class EnsembleFitter():
         should take predictions, measurements, and uncertainties as arguments.
         Any additional inputs *must* have default values.  
         """
+        utils.validate_input_arrays(predictions, measurements, uncertainties, prior_pops=prior_pops)
         self.uncertainties = uncertainties
         self.predictions = predictions
         self.measurements = measurements        

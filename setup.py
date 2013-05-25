@@ -16,7 +16,7 @@ metadata = {
     "scripts" : ["scripts/lvbp_run.py"],
     "packages" : ["fitensemble"],
     "package_dir" : {"fitensemble" : "fitensemble/"},
-    "data_files" : [("fitensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz"])],
+    "data_files" : [("fitensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz", "example_data/experiments.tab"])],
     "include_package_data" : True,
     'description': "Python code for inferring conformational ensembles.",
     'long_description': """FitEnsemble  (https://github.com/kyleabeauchamp/FitEnsemble)

@@ -1,7 +1,8 @@
+import pandas as pd
 import numpy as np
 import pkg_resources
 
-subsample = 3  # By default, subsample ALA3 to make calculations faster for tutorial.
+#subsample = 3  # By default, subsample ALA3 to make calculations faster for tutorial.
 
 def assign_states(phi,psi):
     """
@@ -14,7 +15,7 @@ def assign_states(phi,psi):
     """
     ass = (0*phi).astype('int') + 3
     
-    #States from Tobin
+    #States from Tobin Sosnick, Biochemistry.
     ass[(phi <= 0)&(phi>=-100)&((psi>=50.)|(psi<= -100))] = 0
     ass[(phi <= -100)&((psi>=50.)|(psi<= -100))] = 1
     ass[(phi <= 0)&((psi<=50.)&(psi>= -100))] = 2
@@ -38,23 +39,34 @@ def J3_HN_HA(phi):
 
     return A * np.cos(phi + phi0) ** 2. + B * np.cos(phi + phi0) + C
 
-def load_alanine(subsample=subsample):
-    measurements = np.array([5.68])  # J coupling from Baldwin, PNAS 2006.  Table 1. Carbon CS from Joanna Long, 2004.
-
-    dih_filename = pkg_resources.resource_filename("fitensemble","example_data/rama.npz")
-    phi, psi = np.load(dih_filename)["arr_0"]
-    J = J3_HN_HA(phi)
-
-    uncertainties = np.array([0.36])
+def load_alanine_pandas():
+    """Load the predictions, measurements, and uncertainties.
+    J coupling data from Baldwin, PNAS 2006.  
+    """
     
-    predictions = np.array([J]).T
+    experiments_filename = pkg_resources.resource_filename("fitensemble","example_data/experiments.tab")
     
-    return measurements, predictions[::subsample], uncertainties
+    experiments = pd.io.parsers.read_table(experiments_filename, sep="\s*", index_col=0)
+    
+    measurements = experiments["measurements"]
+    uncertainties = experiments["uncertainties"]
 
-def load_alanine_dihedrals(subsample=subsample):
+    phi, psi, assignments, indicators = load_alanine_dihedrals()
+    predictions = pd.DataFrame(J3_HN_HA(phi), columns=["J3_HN_HA"])
+
+    return predictions, measurements, uncertainties
+
+def load_alanine_numpy():
+    """Load the predictions, measurements, and uncertainties.
+    J coupling data from Baldwin, PNAS 2006.  
+    """
+    predictions, measurements, uncertainties = load_alanine_pandas()
+    return predictions.values, measurements.values, uncertainties.values
+
+def load_alanine_dihedrals():
     dih_filename = pkg_resources.resource_filename("fitensemble","example_data/rama.npz")
     phi, psi = np.load(dih_filename)["arr_0"]
     
     assignments = assign_states(phi,psi)
     indicators = np.array([assignments==i for i in xrange(4)])
-    return phi[::subsample], psi[::subsample], assignments[::subsample], indicators[:, ::subsample]
+    return phi, psi, assignments, indicators
