@@ -20,6 +20,8 @@ import pymc
 from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
 import numexpr as ne
 
+ne.set_num_threads(3)  # I found optimal performance for 3 threads.  Also you should use OMP_NUM_THREADS=2
+
 def get_q(alpha, predictions):
     """Project predictions onto alpha.
 
@@ -314,13 +316,13 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
         
         train_chi2_j = []  # Calculate the chi2 error on training data
         for k, alpha in enumerate(model.mcmc.trace("alpha")):
-            p = get_population_from_alpha(alpha, train_data, model.prior_pops)  # Training set prior_pops has correct shape
+            p = get_populations_from_alpha(alpha, train_data, model.prior_pops)  # Training set prior_pops has correct shape
             chi2 = get_chi2(p, train_data, measurements, uncertainties)
             train_chi2_j.append(chi2)
 
         test_chi2_j = []  # Calculate the chi2 error on test data
         for k, alpha in enumerate(model.mcmc.trace("alpha")):
-            p = get_population_from_alpha(alpha, test_data, test_prior_pops)  # Training set prior_pops has correct shape
+            p = get_populations_from_alpha(alpha, test_data, test_prior_pops)  # Training set prior_pops has correct shape
             chi2 = get_chi2(p, test_data, measurements, uncertainties)
             test_chi2_j.append(chi2)        
 
