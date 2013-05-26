@@ -39,8 +39,7 @@ def get_q(alpha, predictions):
     We also mean-subtract q, as this provides improved 
     numerical stability.  
     """
-    q = predictions.dot(alpha)
-    q *= -1.
+    q = predictions.dot(-1.0 * alpha)
     q -= q.mean()  # Improves numerical stability without changing populations.
     return q
 
