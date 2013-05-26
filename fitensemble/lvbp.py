@@ -306,20 +306,27 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
         test_data = predictions[test_ind].copy()
         train_data = predictions[train_ind].copy()        
 
-        prior_pops = np.ones_like(test_data[:,0])
-        prior_pops /= prior_pops.sum()
+        test_prior_pops = np.ones_like(test_data[:,0])
+        test_prior_pops /= test_prior_pops.sum()
         
-
+        print("Building model for %d round of cross validation." % j)
         model = model_factory(train_data, measurements, uncertainties)
-
-        model.test_chi_observable = pymc.Lambda("test_chi_observable", 
-                                          lambda alpha=model.alpha: get_chi2(get_populations_from_alpha(alpha, test_data, prior_pops), test_data, measurements, uncertainties))
-        model.train_chi_observable = pymc.Lambda("train_chi_observable", 
-                                           lambda populations=model.populations,mu=model.mu: get_chi2(populations, train_data, measurements, uncertainties, mu=mu))
-                                           
         model.sample(num_samples,thin=thin)
-        test_chi.append(model.mcmc.trace("test_chi_observable")[:].mean())
-        train_chi.append(model.mcmc.trace("train_chi_observable")[:].mean())
+        
+        train_chi2_j = []  # Calculate the chi2 error on training data
+        for k, alpha in enumerate(model.mcmc.trace("alpha")):
+            p = get_population_from_alpha(alpha, train_data, model.prior_pops)  # Training set prior_pops has correct shape
+            chi2 = get_chi2(p, train_data, measurements, uncertainties)
+            train_chi2_j.append(chi2)
+
+        test_chi2_j = []  # Calculate the chi2 error on test data
+        for k, alpha in enumerate(model.mcmc.trace("alpha")):
+            p = get_population_from_alpha(alpha, test_data, test_prior_pops)  # Training set prior_pops has correct shape
+            chi2 = get_chi2(p, test_data, measurements, uncertainties)
+            test_chi2_j.append(chi2)        
+
+        test_chi.append(np.mean(test_chi2_j))
+        train_chi.append(np.mean(train_chi2_j))
 
     test_chi = np.array(test_chi)
     train_chi = np.array(train_chi)

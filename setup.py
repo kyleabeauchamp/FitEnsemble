@@ -14,7 +14,7 @@ metadata = {
     'install_requires': ['scipy', 'numpy', 'pymc', 'tables'],
     'platforms': ["Linux", "Mac OS X"],
     "scripts" : ["scripts/lvbp_run.py"],
-    "packages" : ["fitensemble"],
+    "packages" : ["fitensemble", "fitensemble.nmr_tools"],
     "package_dir" : {"fitensemble" : "fitensemble/"},
     "data_files" : [("fitensemble/example_data", ["example_data/conf.pdb", "example_data/trajout.xtc", "example_data/rama.npz", "example_data/experiments.tab"])],
     "include_package_data" : True,
