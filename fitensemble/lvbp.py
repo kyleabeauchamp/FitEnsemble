@@ -20,7 +20,7 @@ import pymc
 from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
 import numexpr as ne
 
-ne.set_num_threads(3)  # I found optimal performance for 3 threads.  Also you should use OMP_NUM_THREADS=2
+ne.set_num_threads(2)  # I found optimal performance for 2-3 threads.  Also you should use OMP_NUM_THREADS=2  Optimal performance depends on the input size and your system specs.
 
 def get_q(alpha, predictions):
     """Project predictions onto alpha.

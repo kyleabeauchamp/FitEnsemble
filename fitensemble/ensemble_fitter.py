@@ -154,20 +154,20 @@ class EnsembleFitter():
         if db != "hdf5":
             return
 
-        from tables import Float32Atom, Filters
+        from tables import Float64Atom, Filters
         compression = Filters(complevel=9, complib='blosc', shuffle=True)
         F = self.mcmc.db._h5file
 
-        F.createCArray("/", "predictions", Float32Atom(), self.predictions.shape, filters=compression)
+        F.createCArray("/", "predictions", Float64Atom(), self.predictions.shape, filters=compression)
         F.root.predictions[:] = self.predictions
         
-        F.createCArray("/", "measurements", Float32Atom(), self.measurements.shape, filters=compression)
+        F.createCArray("/", "measurements", Float64Atom(), self.measurements.shape, filters=compression)
         F.root.measurements[:] = self.measurements
 
-        F.createCArray("/", "uncertainties", Float32Atom(), self.uncertainties.shape, filters=compression)
+        F.createCArray("/", "uncertainties", Float64Atom(), self.uncertainties.shape, filters=compression)
         F.root.uncertainties[:] = self.uncertainties
 
-        F.createCArray("/", "prior_pops", Float32Atom(), self.prior_pops.shape, filters=compression)
+        F.createCArray("/", "prior_pops", Float64Atom(), self.prior_pops.shape, filters=compression)
         F.root.prior_pops[:] = self.prior_pops
 
     def accumulate_populations(self):
