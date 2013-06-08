@@ -124,9 +124,9 @@ class EnsembleFitter():
         Any additional inputs *must* have default values.  
         """
         utils.validate_input_arrays(predictions, measurements, uncertainties, prior_pops=prior_pops)
-        self.uncertainties = uncertainties
-        self.predictions = predictions
-        self.measurements = measurements        
+        self.uncertainties = uncertainties.astype('float64')  # Performance is improved by having everything the same dtype
+        self.predictions = predictions.astype('float64')  # We could get 2X more performance with 32 bit, but not worth the precision issues
+        self.measurements = measurements.astype('float64')
         
         self.num_frames, self.num_measurements = predictions.shape        
         self.prior_pops = get_prior_pops(self.num_frames, prior_pops)
