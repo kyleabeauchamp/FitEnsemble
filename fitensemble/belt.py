@@ -1,5 +1,5 @@
 """
-An implementation of the LVBP approach outlined in Beauchamp, JACS. 2013.  
+An implementation of the BELT approach outlined in Beauchamp, JACS. 2013.  
 
 Most functions in this module take three inputs: alpha, predictions, and measurements.
 Thus, predictions[j,i] gives the ith predicted observable at frame j.  The ith 
@@ -99,12 +99,12 @@ def get_populations_from_alpha(alpha, predictions, prior_pops):
     q = get_q(alpha, predictions)
     return get_populations_from_q(q, predictions, prior_pops)    
 
-class LVBP(EnsembleFitter):
-    """Abstract base class for Linear Virtual Biasing Potential."""
+class BELT(EnsembleFitter):
+    """Abstract base class for Bayesian Energy Landscape Tilting."""
     __metaclass__ = abc.ABCMeta
     
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
-        """Abstract base class for Linear Virtual Biasing Potential.
+        """Abstract base class for Bayesian Energy Landscape Tilting.
 
         Parameters
         ----------
@@ -120,7 +120,7 @@ class LVBP(EnsembleFitter):
         EnsembleFitter.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
             
     def initialize_variables(self):
-        """Must be called by any subclass of LVBP; initializes MCMC variables."""        
+        """Must be called by any subclass of BELT; initializes MCMC variables."""        
 
         @pymc.dtrm
         def q(alpha=self.alpha, prior_pops=self.prior_pops):
@@ -150,11 +150,11 @@ class LVBP(EnsembleFitter):
             populations = get_populations_from_alpha(alpha, self.predictions, self.prior_pops)
             yield populations
         
-class MVN_LVBP(LVBP):
-    """Linear Virtual Biasing Potential with MultiVariate Normal Prior."""
+class MVN_BELT(BELT):
+    """Bayesian Energy Landscape Tilting with MultiVariate Normal Prior."""
 
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
-        """Linear Virtual Biasing Potential with MultiVariate Normal Prior.
+        """Bayesian Energy Landscape Tilting with MultiVariate Normal Prior.
 
         Parameters
         ----------
@@ -171,7 +171,7 @@ class MVN_LVBP(LVBP):
         prior_pops : ndarray, optional, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
         
         if precision == None:
             precision = np.cov(predictions.T)
@@ -181,10 +181,10 @@ class MVN_LVBP(LVBP):
         self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength)
         self.initialize_variables()
 
-class MaxEnt_LVBP(LVBP):
-    """Linear Virtual Biasing Potential with maximum entropy prior."""
+class MaxEnt_BELT(BELT):
+    """Bayesian Energy Landscape Tilting with maximum entropy prior."""
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
-        """Linear Virtual Biasing Potential with maximum entropy prior.
+        """Bayesian Energy Landscape Tilting with maximum entropy prior.
 
         Parameters
         ----------
@@ -202,7 +202,7 @@ class MaxEnt_LVBP(LVBP):
             Prior populations of each conformation.  If None, use uniform populations.        
         """
 
-        LVBP.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
+        BELT.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
         
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
         self.initialize_variables()
@@ -219,10 +219,10 @@ class MaxEnt_LVBP(LVBP):
         self.logp_prior = logp_prior
 
 
-class Jeffreys_LVBP(LVBP):
-    """Linear Virtual Biasing Potential with Jeffrey's prior."""
+class Jeffreys_BELT(BELT):
+    """Bayesian Energy Landscape Tilting with Jeffrey's prior."""
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None, weights_alpha=None):
-        """Linear Virtual Biasing Potential with Jeffrey's prior.
+        """Bayesian Energy Landscape Tilting with Jeffrey's prior.
 
         Parameters
         ----------
@@ -235,7 +235,7 @@ class Jeffreys_LVBP(LVBP):
         prior_pops : ndarray, optional, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.        
         """
-        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))
         self.initialize_variables()
@@ -245,10 +245,10 @@ class Jeffreys_LVBP(LVBP):
             return log_jeffreys(populations,predictions,mu=mu)
         self.logp_prior = logp_prior
 
-class MaxEnt_Correlation_Corrected_LVBP(LVBP):
-    """Linear Virtual Biasing Potential with maximum entropy prior and correlation-corrected likelihood."""
+class MaxEnt_Correlation_Corrected_BELT(BELT):
+    """Bayesian Energy Landscape Tilting with maximum entropy prior and correlation-corrected likelihood."""
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
-        """Linear Virtual Biasing Potential with maximum entropy prior and correlation-corrected likelihood.
+        """Bayesian Energy Landscape Tilting with maximum entropy prior and correlation-corrected likelihood.
 
         Parameters
         ----------
@@ -266,7 +266,7 @@ class MaxEnt_Correlation_Corrected_LVBP(LVBP):
             Prior populations of each conformation.  If None, use uniform populations.        
         """
 
-        LVBP.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
+        BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
         if precision == None:
             precision = np.cov(predictions.T)

@@ -99,11 +99,11 @@ def sample_prior_pops(num_frames, bootstrap_index_list):
     return prior_populations        
 
 class EnsembleFitter():
-    """Abstract base class for Linear Virtual Biasing Potential."""
+    """Abstract base class for ensemble modeling."""
     __metaclass__ = abc.ABCMeta
     
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
-        """Abstract base class for Linear Virtual Biasing Potential.
+        """Abstract base class for ensemble modeling.
 
         Parameters
         ----------
@@ -119,7 +119,7 @@ class EnsembleFitter():
         Notes
         -----
         
-        In subclasses of EnsembleFitter (e.g. LVBP), the __init__() function 
+        In subclasses of EnsembleFitter (e.g. BELT), the __init__() function 
         should take predictions, measurements, and uncertainties as arguments.
         Any additional inputs *must* have default values.  
         """
