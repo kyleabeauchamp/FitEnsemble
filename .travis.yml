@@ -14,6 +14,7 @@ install:
   - sudo apt-get install -qq cython
   - sudo apt-get install -qq python-numexpr
   - sudo apt-get install -qq python-tables
+  - sudo apt-get install -qq python-pandas    
   - sudo apt-get install -qq python-setuptools
   - sudo easy_install pip
   - sudo pip install nose-performance
