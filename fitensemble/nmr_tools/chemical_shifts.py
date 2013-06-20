@@ -50,6 +50,7 @@ old_cs_atom_uncertainties = pd.Series({
 "CS_2_N":2.4625,"CS_2_CA":0.7781,"CS_2_CB":1.1760,"CS_2_C":1.1309,"CS_2_H":0.4685,"CS_2_HA":0.2743,  # Mean uncertainties from SPARTA+
 })
 
+
 def reweight(dataframe, prediction_model):
     atom_scales = weights.ix[prediction_model]
     atoms = dataframe.columns.get_level_values("name")

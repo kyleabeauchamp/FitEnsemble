@@ -1,5 +1,5 @@
 """
-This file contains scripts for calculating J Couplings from backbone dihedrals.    
+This file contains scripts for calculating J Couplings from backbone dihedrals.
 
 References:
 
@@ -11,6 +11,7 @@ Structure and dynamics of the homologous series of alanine peptides: a joint mol
 """
 import numpy as np
 import pandas as pd
+
 
 def J3_HN_HA_schwalbe(phi):
     """
@@ -25,6 +26,7 @@ def J3_HN_HA_schwalbe(phi):
     C = 1.55
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
 
+
 def J3_HN_HA_ruterjans(phi):
     """RMS = 0.25
     """
@@ -35,6 +37,7 @@ def J3_HN_HA_ruterjans(phi):
     C = 0.65
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
 
+
 def J3_HN_HA_bax(phi):
     """RMS = 0.36
     """
@@ -44,7 +47,8 @@ def J3_HN_HA_bax(phi):
     B = -1.36
     C = 0.33
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
-    
+
+
 def J3_HN_HA_karplus(phi):
     """RMS = 0.36
     """
@@ -54,6 +58,7 @@ def J3_HN_HA_karplus(phi):
     B = -1.4
     C = 1.9
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J3_HN_Cprime_schwalbe(phi):
     """
@@ -66,17 +71,19 @@ def J3_HN_Cprime_schwalbe(phi):
     A = 4.29
     B = -1.01
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi1)
-    
+
+
 def J3_HN_Cprime_ruterjans(phi):
     """
     RMS = 0.39
     """
-    phi = phi*np.pi/180.    
+    phi = phi*np.pi/180.
     phi0 = 180*np.pi/180.
     A = 4.41
     B = -1.36
     C = 0.24
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J3_HN_Cprime_bax(phi):
     """
@@ -88,7 +95,7 @@ def J3_HN_Cprime_bax(phi):
     B = -1.08
     C = -0.01
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
-    
+
 
 def J3_HA_Cprime_schwalbe(phi):
     """
@@ -101,6 +108,7 @@ def J3_HA_Cprime_schwalbe(phi):
     B = -2.18
     C = 1.28
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J3_HA_Cprime_ruterjans(phi):
     """
@@ -117,7 +125,7 @@ def J3_HA_Cprime_ruterjans(phi):
 def J3_Cprime_Cprime_schwalbe(phi):
     """
     RMS = 0.13
-    
+
     Parms from Hu and Bax
     """
     phi = phi*np.pi/180.
@@ -126,6 +134,7 @@ def J3_Cprime_Cprime_schwalbe(phi):
     B = -0.93
     C = 0.60
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J3_Cprime_Cprime_ruterjans(phi):
     """
@@ -138,10 +147,11 @@ def J3_Cprime_Cprime_ruterjans(phi):
     C = 0.52
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
 
+
 def J3_HN_CB_schwalbe(phi):
     """
     RMS = 0.21
-    
+
     Parms from Hu Bax
     """
     phi = phi*np.pi/180.
@@ -150,6 +160,7 @@ def J3_HN_CB_schwalbe(phi):
     B = -0.74
     C = 0.13
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J3_HN_CB_ruterjans(phi):
     """
@@ -162,6 +173,7 @@ def J3_HN_CB_ruterjans(phi):
     C = 0.18
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
 
+
 def J3_HN_CB_bax(phi):
     """
     RMS = 0.22
@@ -172,6 +184,7 @@ def J3_HN_CB_bax(phi):
     B = -0.59
     C = 0.08
     return A*np.cos(phi + phi0)**2. + B*np.cos(phi + phi0) + C
+
 
 def J1_N_CA_schwalbe(psi):
     """
@@ -186,32 +199,35 @@ def J1_N_CA_schwalbe(psi):
     C = 9.51
     return A*np.cos(psi + psi0)**2. + B*np.cos(psi + psi0) + C
 
+
 def J2_N_CA_schwalbe(psi):
     """
     RMS = 0.4776
     Parms originally from Ding and Gronenborn
     """
-    psi = psi*np.pi/180.    
+    psi = psi*np.pi/180.
     psi0 = 0.0*np.pi/180.
     A = -0.66
     B = -1.52
     C = 7.85
     return A*np.cos(psi + psi0)**2. + B*np.cos(psi + psi0) + C
 
+
 def J3_HN_CA_ruterjans(phi,psi):
     phi = phi*np.pi/180.
     psi = psi*np.pi/180.
     c = np.cos
-    s = np.sin    
-    f = -0.23*c(phi) - 0.2*c(psi) + 0.07*s(phi) + 0.08*s(psi) + 0.07*c(phi)*c(psi) + 0.12*c(phi)*s(psi) - 0.08*s(phi)*c(psi)  - 0.14*s(phi)*s(psi) + 0.54
+    s = np.sin
+    f = -0.23*c(phi) - 0.2*c(psi) + 0.07*s(phi) + 0.08*s(psi) + 0.07*c(phi)*c(psi) + 0.12*c(phi)*s(psi) - 0.08*s(phi)*c(psi) - 0.14*s(phi)*s(psi) + 0.54
     return f
+
 
 def J3_HA_HA_CYS(chi):
     t = chi * np.pi / 180.
     c = np.cos
     f = 5.32 - 1.37 * c(t) + 3.61*c(2*t)
-    return f    
-    
+    return f
+
 J3_HN_HA = J3_HN_HA_bax
 J3_HN_Cprime = J3_HN_Cprime_bax
 J3_HN_CB = J3_HN_CB_bax

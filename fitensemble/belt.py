@@ -1,15 +1,15 @@
 """
-An implementation of the BELT approach outlined in Beauchamp, JACS. 2013.  
+An implementation of the BELT approach outlined in Beauchamp, JACS. 2013.
 
 Most functions in this module take three inputs: alpha, predictions, and measurements.
-Thus, predictions[j,i] gives the ith predicted observable at frame j.  The ith 
+Thus, predictions[j,i] gives the ith predicted observable at frame j.  The ith
 equilibrium experiment is stored in measurements[i].  Similarly, uncertainties[i]
-contains an estimate of the uncertainty in the ith measurement.  In practice, we 
-use uncertainties[i] to model *both* the experimental uncertainty and the 
-prediction uncertainty associated with predicting experimental observables.  
+contains an estimate of the uncertainty in the ith measurement.  In practice, we
+use uncertainties[i] to model *both* the experimental uncertainty and the
+prediction uncertainty associated with predicting experimental observables.
 
 Below, alpha is a vector of coupling parameters that will be used to reweight
- the simulation value using a biasing potential that is linear in the predicted observables: 
+ the simulation value using a biasing potential that is linear in the predicted observables:
 U(x_i) = \sum_j alpha[i] predictions[j,i]
 
 """
@@ -21,6 +21,7 @@ from ensemble_fitter import EnsembleFitter, get_prior_pops, get_chi2
 import numexpr as ne
 
 ne.set_num_threads(2)  # I found optimal performance for 2-3 threads.  Also you should use OMP_NUM_THREADS=2  Optimal performance depends on the input size and your system specs.
+
 
 def get_q(alpha, predictions):
     """Project predictions onto alpha.
@@ -38,12 +39,13 @@ def get_q(alpha, predictions):
         q is -1.0 * predictions.dot(alpha)
     Notes
     -----
-    We also mean-subtract q, as this provides improved 
-    numerical stability.  
+    We also mean-subtract q, as this provides improved
+    numerical stability.
     """
     q = predictions.dot(-1.0 * alpha)
     q -= q.mean()  # Improves numerical stability without changing populations.
     return q
+
 
 def get_populations_from_q(q, predictions, prior_pops):
     """Return the reweighted conformational populations.
@@ -55,7 +57,7 @@ def get_populations_from_q(q, predictions, prior_pops):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.       
+        Prior populations of each conformation.  If None, then use uniform pops.
 
     Returns
     -------
@@ -64,8 +66,8 @@ def get_populations_from_q(q, predictions, prior_pops):
 
     Notes
     -----
-    We typically input the mean-subtracted q, as this provides improved 
-    numerical stability.  
+    We typically input the mean-subtracted q, as this provides improved
+    numerical stability.
     """
     populations = ne.evaluate("exp(q) * prior_pops")
     populations_sum = populations.sum()
@@ -78,6 +80,7 @@ def get_populations_from_q(q, predictions, prior_pops):
 
     return populations
 
+
 def get_populations_from_alpha(alpha, predictions, prior_pops):
     """Return the reweighted conformational populations.
 
@@ -88,7 +91,7 @@ def get_populations_from_alpha(alpha, predictions, prior_pops):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation. 
+        Prior populations of each conformation.
 
     Returns
     -------
@@ -97,12 +100,13 @@ def get_populations_from_alpha(alpha, predictions, prior_pops):
 
     """
     q = get_q(alpha, predictions)
-    return get_populations_from_q(q, predictions, prior_pops)    
+    return get_populations_from_q(q, predictions, prior_pops)
+
 
 class BELT(EnsembleFitter):
     """Abstract base class for Bayesian Energy Landscape Tilting."""
     __metaclass__ = abc.ABCMeta
-    
+
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
         """Abstract base class for Bayesian Energy Landscape Tilting.
 
@@ -115,25 +119,25 @@ class BELT(EnsembleFitter):
         uncertainties : ndarray, shape = (num_measurements)
             uncertainties[i] gives the uncertainty of the ith experiment
         prior_pops : ndarray, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
+            Prior populations of each conformation.  If None, use uniform populations.
         """
         EnsembleFitter.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
-            
+
     def initialize_variables(self):
-        """Must be called by any subclass of BELT; initializes MCMC variables."""        
+        """Must be called by any subclass of BELT; initializes MCMC variables."""
 
         @pymc.dtrm
         def q(alpha=self.alpha, prior_pops=self.prior_pops):
             return get_q(alpha, self.predictions)
         self.q = q
-        self.q.keep_trace = False            
+        self.q.keep_trace = False
 
         @pymc.dtrm
         def populations(q=self.q, prior_pops=self.prior_pops):
-            return get_populations_from_q(q, self.predictions, prior_pops)        
+            return get_populations_from_q(q, self.predictions, prior_pops)
         self.populations = populations
-        self.populations.keep_trace = False        
-        
+        self.populations.keep_trace = False
+
         @pymc.dtrm
         def mu(populations=self.populations):
             return populations.dot(self.predictions)
@@ -149,7 +153,8 @@ class BELT(EnsembleFitter):
         for i, alpha in enumerate(alpha_trace):
             populations = get_populations_from_alpha(alpha, self.predictions, self.prior_pops)
             yield populations
-        
+
+
 class MVN_BELT(BELT):
     """Bayesian Energy Landscape Tilting with MultiVariate Normal Prior."""
 
@@ -169,10 +174,10 @@ class MVN_BELT(BELT):
         precision : ndarray, optional, shape = (num_measurements, num_measurements)
             The precision matrix of the predicted observables.
         prior_pops : ndarray, optional, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
+            Prior populations of each conformation.  If None, use uniform populations.
         """
         BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
-        
+
         if precision == None:
             precision = np.cov(predictions.T)
             if precision.ndim == 0:
@@ -180,6 +185,7 @@ class MVN_BELT(BELT):
 
         self.alpha = pymc.MvNormal("alpha", np.zeros(self.num_measurements), tau=precision * regularization_strength)
         self.initialize_variables()
+
 
 class MaxEnt_BELT(BELT):
     """Bayesian Energy Landscape Tilting with maximum entropy prior."""
@@ -199,16 +205,16 @@ class MaxEnt_BELT(BELT):
         precision : ndarray, optional, shape = (num_measurements, num_measurements)
             The precision matrix of the predicted observables.
         prior_pops : ndarray, optional, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
+            Prior populations of each conformation.  If None, use uniform populations.
         """
 
         BELT.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
-        
+
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
         self.initialize_variables()
 
         self.log_prior_pops = np.log(self.prior_pops)
-        
+
         @pymc.potential
         def logp_prior(populations=self.populations, q=self.q, log_prior_pops=self.log_prior_pops):
             if populations.min() <= 0:
@@ -233,17 +239,18 @@ class Jeffreys_BELT(BELT):
         uncertainties : ndarray, shape = (num_measurements)
             uncertainties[i] gives the uncertainty of the ith experiment
         prior_pops : ndarray, optional, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
+            Prior populations of each conformation.  If None, use uniform populations.
         """
         BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))
         self.initialize_variables()
-                
+
         @pymc.potential
         def logp_prior(populations=self.populations,mu=self.mu):
             return log_jeffreys(populations,predictions,mu=mu)
         self.logp_prior = logp_prior
+
 
 class MaxEnt_Correlation_Corrected_BELT(BELT):
     """Bayesian Energy Landscape Tilting with maximum entropy prior and correlation-corrected likelihood."""
@@ -263,7 +270,7 @@ class MaxEnt_Correlation_Corrected_BELT(BELT):
         precision : ndarray, optional, shape = (num_measurements, num_measurements)
             The precision matrix of the predicted observables.
         prior_pops : ndarray, optional, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
+            Prior populations of each conformation.  If None, use uniform populations.
         """
 
         BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
@@ -271,11 +278,11 @@ class MaxEnt_Correlation_Corrected_BELT(BELT):
         if precision == None:
             precision = np.cov(predictions.T)
             if precision.ndim == 0:
-                precision = precision.reshape((1,1))        
-        
+                precision = precision.reshape((1,1))
+
         self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
         self.initialize_variables()
-        
+
         @pymc.potential
         def logp_prior(populations=self.populations, mu=self.mu, prior_pops=self.prior_pops):
             if populations.min() <= 0:
@@ -286,7 +293,7 @@ class MaxEnt_Correlation_Corrected_BELT(BELT):
 
         rho = np.corrcoef(predictions.T)
         rho_inverse = np.linalg.inv(rho)
-        
+
         @pymc.potential
         def logp(populations=self.populations,mu=self.mu):
             z = (mu - measurements) / uncertainties
@@ -294,26 +301,26 @@ class MaxEnt_Correlation_Corrected_BELT(BELT):
             chi2 = z.dot(chi2)
             return -1 * chi2
         self.logp = logp
-        
-    
-def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples = 50000, thin=1, prior="maxent"):
+
+
+def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples=50000, thin=1, prior="maxent"):
     all_indices = np.concatenate(bootstrap_index_list)
     test_chi = []
     train_chi = []
     precision = np.cov(predictions.T)
-    
+
     for j, test_ind in enumerate(bootstrap_index_list):  # The test indices are input as the kfold splits of the data.
         train_ind = np.setdiff1d(all_indices,test_ind)  # The train data is ALL the rest of the data.  Thus, train > test.
         test_data = predictions[test_ind].copy()
-        train_data = predictions[train_ind].copy()        
+        train_data = predictions[train_ind].copy()
 
         test_prior_pops = np.ones_like(test_data[:,0])
         test_prior_pops /= test_prior_pops.sum()
-        
+
         print("Building model for %d round of cross validation." % j)
         model = model_factory(train_data, measurements, uncertainties)
         model.sample(num_samples,thin=thin)
-        
+
         train_chi2_j = []  # Calculate the chi2 error on training data
         for k, alpha in enumerate(model.mcmc.trace("alpha")):
             p = get_populations_from_alpha(alpha, train_data, model.prior_pops)  # Training set prior_pops has correct shape
@@ -324,7 +331,7 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
         for k, alpha in enumerate(model.mcmc.trace("alpha")):
             p = get_populations_from_alpha(alpha, test_data, test_prior_pops)  # Training set prior_pops has correct shape
             chi2 = get_chi2(p, test_data, measurements, uncertainties)
-            test_chi2_j.append(chi2)        
+            test_chi2_j.append(chi2)
 
         test_chi.append(np.mean(test_chi2_j))
         train_chi.append(np.mean(train_chi2_j))
@@ -332,10 +339,11 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
     test_chi = np.array(test_chi)
     train_chi = np.array(train_chi)
     return train_chi, test_chi
-            
+
+
 def fisher_information(populations, predictions, mu):
     """Calculate the fisher information.
-    
+
     Parameters
     ----------
     populations : ndarray, shape = (num_frames)
@@ -343,7 +351,7 @@ def fisher_information(populations, predictions, mu):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     mu : ndarray, shape = (num_measurements)
-        Ensemble average prediction of each observable.        
+        Ensemble average prediction of each observable.
     """
     D = predictions - mu
     num_frames = len(populations)
@@ -352,9 +360,10 @@ def fisher_information(populations, predictions, mu):
     S = D.T.dot(predictions)
     return S
 
+
 def log_jeffreys(populations, predictions, mu):
     """Calculate the log of Jeffrey's prior.
-    
+
     Parameters
     ----------
     populations : ndarray, shape = (num_frames)
@@ -362,7 +371,7 @@ def log_jeffreys(populations, predictions, mu):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     mu : ndarray, shape = (num_measurements)
-        Ensemble average prediction of each observable.        
+        Ensemble average prediction of each observable.
     """
 
     I = fisher_information(populations,predictions,mu)

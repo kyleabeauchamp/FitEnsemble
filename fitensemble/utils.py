@@ -2,9 +2,11 @@ import pandas as pd
 import numpy as np
 from mdtraj.utils.arrays import ensure_type
 
+
 def validate_pandas_columns(predictions, measurements, uncertainties):
     if not (predictions.columns.equals(measurements.index) and predictions.columns.equals(uncertainties.index)):
         raise(TypeError("predictions.columns, measurements.index, and uncertainties.index must be identical.  Perhaps your data is mis-aligned?"))
+
 
 def validate_input_arrays(predictions, measurements, uncertainties, prior_pops=None):
     num_frames, num_measurements = predictions.shape

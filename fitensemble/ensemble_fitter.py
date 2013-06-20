@@ -7,8 +7,10 @@ import numpy as np
 import pymc
 import utils
 
+
 def reduced_chi_squared(predictions, measurements, uncertainties):
     return np.mean(((predictions.mean(0) - measurements) / uncertainties)**2)
+
 
 def get_prior_pops(num_frames, prior_pops=None):
     """Returns a uniform population vector if prior_pops is None.
@@ -18,20 +20,21 @@ def get_prior_pops(num_frames, prior_pops=None):
     num_frames : int
         Number of conformations
     prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.   
+        Prior populations of each conformation.  If None, then use uniform pops.
 
     Returns
     -------
     prior_pops : ndarray, shape = (num_frames)
         Prior populations of each conformation
     """
-    
+
     if prior_pops != None:
         return prior_pops
     else:
         prior_pops = np.ones(num_frames)
         prior_pops /= prior_pops.sum()
         return prior_pops
+
 
 def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
     """Return the chi squared objective function.
@@ -43,7 +46,7 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
     predictions : ndarray, shape = (num_frames, num_measurements)
         predictions[j, i] gives the ith observabled predicted at frame j
     prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.       
+        Prior populations of each conformation.  If None, then use uniform pops.
 
     Returns
     -------
@@ -54,10 +57,11 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
 
     if mu == None:
         mu = predictions.T.dot(populations)
-    
+
     delta = (measurements - mu) / uncertainties
 
     return np.linalg.norm(delta)**2.
+
 
 def sample_prior_pops(num_frames, bootstrap_index_list):
     """Sample the prior populations using a Dirchlet random variable.
@@ -74,10 +78,10 @@ def sample_prior_pops(num_frames, bootstrap_index_list):
     -------
     prior_populations : ndarray, shape = (num_frames)
         Prior populations of each conformation
-        
+
     Notes
     -------
-    This function allows you to perform Bayesian bootstrapping by modifying 
+    This function allows you to perform Bayesian bootstrapping by modifying
     the prior populations attached to each frame.  Because molecular dynamics
     frames are time correlated, one must first divide the dataset into
     temporal blocks.  A dirichlet random variable is then drawn to modify the prior
@@ -95,13 +99,14 @@ def sample_prior_pops(num_frames, bootstrap_index_list):
     prior_populations = np.ones(num_frames)
     for k,ind in enumerate(bootstrap_index_list):
         prior_populations[ind] = block_pops[k] / len(ind)
-    
-    return prior_populations        
+
+    return prior_populations
+
 
 class EnsembleFitter():
     """Abstract base class for ensemble modeling."""
     __metaclass__ = abc.ABCMeta
-    
+
     def __init__(self, predictions, measurements, uncertainties, prior_pops=None):
         """Abstract base class for ensemble modeling.
 
@@ -114,41 +119,41 @@ class EnsembleFitter():
         uncertainties : ndarray, shape = (num_measurements)
             uncertainties[i] gives the uncertainty of the ith experiment
         prior_pops : ndarray, shape = (num_frames)
-            Prior populations of each conformation.  If None, use uniform populations.        
-            
+            Prior populations of each conformation.  If None, use uniform populations.
+
         Notes
         -----
-        
-        In subclasses of EnsembleFitter (e.g. BELT), the __init__() function 
+
+        In subclasses of EnsembleFitter (e.g. BELT), the __init__() function
         should take predictions, measurements, and uncertainties as arguments.
-        Any additional inputs *must* have default values.  
+        Any additional inputs *must* have default values.
         """
         utils.validate_input_arrays(predictions, measurements, uncertainties, prior_pops=prior_pops)
         self.uncertainties = uncertainties.astype('float64')  # Performance is improved by having everything the same dtype
         self.predictions = predictions.astype('float64')  # We could get 2X more performance with 32 bit, but not worth the precision issues
         self.measurements = measurements.astype('float64')
-        
-        self.num_frames, self.num_measurements = predictions.shape        
+
+        self.num_frames, self.num_measurements = predictions.shape
         self.prior_pops = get_prior_pops(self.num_frames, prior_pops)
-                            
-    def sample(self, num_samples, thin=1, burn=0, save_pops=False, filename = None):
-        """Construct MCMC object and begin sampling."""        
+
+    def sample(self, num_samples, thin=1, burn=0, save_pops=False, filename=None):
+        """Construct MCMC object and begin sampling."""
         if filename == None:
             db = "ram"
         else:
             db = "hdf5"
-            
+
         self.mcmc = pymc.MCMC(self, db=db, dbname=filename)
         self.save(db)
         self.mcmc.sample(num_samples, thin=thin, burn=burn)
-        
+
     def save(self, db):
         """Save the input data to disk.
-        
+
         Notes
         -----
-        Saves predictions, measurements, observables, and prior_pops to the 
-        HDF5 PyMC database.  
+        Saves predictions, measurements, observables, and prior_pops to the
+        HDF5 PyMC database.
         """
 
         if db != "hdf5":
@@ -160,7 +165,7 @@ class EnsembleFitter():
 
         F.createCArray("/", "predictions", Float64Atom(), self.predictions.shape, filters=compression)
         F.root.predictions[:] = self.predictions
-        
+
         F.createCArray("/", "measurements", Float64Atom(), self.measurements.shape, filters=compression)
         F.root.measurements[:] = self.measurements
 
@@ -178,11 +183,11 @@ class EnsembleFitter():
         p : ndarray, shape = (num_frames)
             Posterior averaged populations of each conformation
         """
-        p = np.zeros(self.num_frames)        
+        p = np.zeros(self.num_frames)
 
         for pi in self.iterate_populations():
             p += pi
-            
+
         p /= p.sum()
 
         return p
@@ -206,25 +211,25 @@ class EnsembleFitter():
             observable.append(observable_features.T.dot(p))
 
         return np.array(observable)
-        
+
     @classmethod
     def load(cls, filename):
         """Load a previous MCMC trace from a PyTables HDF5 file.
-        
+
         Parameters
         ----------
         filename : string
-            The filename for a previous run fit_ensemble MCMC trace.        
+            The filename for a previous run fit_ensemble MCMC trace.
         """
-        
+
         mcmc = pymc.database.hdf5.load(filename, 'r')
 
         F = mcmc._h5file
         predictions = F.root.predictions[:]
         measurements = F.root.measurements[:]
         uncertainties = F.root.uncertainties[:]
-        prior_pops = F.root.prior_pops[:]        
-        
+        prior_pops = F.root.prior_pops[:]
+
         ensemble_fitter = cls(predictions, measurements, uncertainties, prior_pops=prior_pops)
         ensemble_fitter.mcmc = mcmc
 
