@@ -1,5 +1,5 @@
 from fitensemble import belt
-from fitensemble.testing import eq
+from mdtraj.testing import eq
 import numpy as np
 
 def generate_gaussian_data(num_frames, num_measurements):
