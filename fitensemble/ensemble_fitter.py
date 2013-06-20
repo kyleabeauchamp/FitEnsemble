@@ -223,7 +223,7 @@ class EnsembleFitter():
         predictions = F.root.predictions[:]
         measurements = F.root.measurements[:]
         uncertainties = F.root.uncertainties[:]
-        prior_pops = F.root.prior_pops[:]
+        prior_pops = F.root.prior_pops[:]        
         
         ensemble_fitter = cls(predictions, measurements, uncertainties, prior_pops=prior_pops)
         ensemble_fitter.mcmc = mcmc
