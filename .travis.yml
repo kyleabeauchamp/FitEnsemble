@@ -5,6 +5,7 @@
 language: c
 install:
   - sudo apt-get update
+  - sudo apt-get install -qq gfortran  
   - sudo apt-get install -qq python-dev
   - sudo apt-get install -qq python-numpy
   - sudo apt-get install -qq python-scipy
