@@ -20,7 +20,7 @@ install:
   - sudo pip install nose-performance
   - sudo pip install flake8
   - sudo pip install pymc
-  - sudo pip install mdtraj  
+  - sudo pip install git+git://github.com/rmcgibbo/mdtraj
 
 script:
   - sudo python setup.py -q install
