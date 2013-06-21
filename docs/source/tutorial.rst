@@ -24,7 +24,7 @@ The tutorials are available here:
 
 Alternatively, you can use IPython to interactively complete the tutorials.  
 This requires you to have successfully installed `FitEnsemble`.  After installation,
-go to the `tutorials` directory in the `FitEnsemble` directory.  Then type::
+go to the `tutorial` directory in the `FitEnsemble` directory.  Then type::
 
 	ipython notebook --pylab=inline
 

@@ -240,6 +240,10 @@ class Jeffreys_BELT(BELT):
             uncertainties[i] gives the uncertainty of the ith experiment
         prior_pops : ndarray, optional, shape = (num_frames)
             Prior populations of each conformation.  If None, use uniform populations.
+            
+        Notes:
+        ------
+        This feature is UNTESTED.            
         """
         BELT.__init__(self, predictions, measurements, uncertainties, prior_pops=prior_pops)
 
@@ -352,6 +356,10 @@ def fisher_information(populations, predictions, mu):
         predictions[j, i] gives the ith observabled predicted at frame j
     mu : ndarray, shape = (num_measurements)
         Ensemble average prediction of each observable.
+
+    Notes:
+    ------
+    This feature is UNTESTED.        
     """
     D = predictions - mu
     num_frames = len(populations)
@@ -372,6 +380,10 @@ def log_jeffreys(populations, predictions, mu):
         predictions[j, i] gives the ith observabled predicted at frame j
     mu : ndarray, shape = (num_measurements)
         Ensemble average prediction of each observable.
+        
+    Notes:
+    ------
+    This feature is UNTESTED.
     """
 
     I = fisher_information(populations,predictions,mu)

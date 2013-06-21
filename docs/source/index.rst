@@ -20,7 +20,7 @@ To construct a conformational ensemble, you will need a "prior" ensemble.
 This guess should ideally be sampled from the approximate equilibrium
 of your system.  To perform an LVBP calculation, you will need three inputs:
 
- * A set of conformations 
+ * A set of conformations (from MD simulations, for example)
 
  * A set of experimental measurements and their uncertainties 
 
