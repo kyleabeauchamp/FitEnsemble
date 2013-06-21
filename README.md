@@ -12,10 +12,10 @@ Installation
 
 Visit http://fitensemble.readthedocs.org/en/latest/installation.html for installation instructions.
 
-Links
+Documentation
 =====
 
-- Documentation: http://FitEnsemble.readthedocs.org/en/latest
+- http://FitEnsemble.readthedocs.org/en/latest
 
 Visit the documentation to get started!
 
