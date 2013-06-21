@@ -22,6 +22,8 @@ FitEnsemble requires Python 2.7 and the following Python packages:
 
 * NumExpr_
 
+* MDTraj_
+
 The easiest way to install all prerequisites is using the Enthought_ 
 or Anaconda_ python distributions.  These environments 
 come with all prequisties except PyMC.  In Anaconda, PyMC is available as
@@ -42,3 +44,4 @@ source code, you can install FitEnsemble with the following command::
 .. _Anaconda: http://continuum.io/
 .. _Pandas: http://pandas.pydata.org/
 .. _NumExpr: http://code.google.com/p/numexpr/
+.. _MDTraj: https://github.com/rmcgibbo/mdtraj
