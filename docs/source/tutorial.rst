@@ -29,7 +29,7 @@ go to the `tutorial` directory in the `FitEnsemble` directory.  Then type::
 
 	ipython notebook --pylab=inline
 
-A web browser should open to the IPython Notebook manager.  Four tutorials should be listed.  You 
+A web browser should open to the IPython Notebook manager.  Five tutorials should be listed.  You 
 should complete the tutorials in order, as each tutorial extends the previous ones.
 
 .. _Tutorial1: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial1.ipynb
