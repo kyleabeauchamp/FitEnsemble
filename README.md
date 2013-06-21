@@ -15,13 +15,6 @@ Installation
 
 Visit http://fitensemble.readthedocs.org/en/latest/installation.html for installation instructions.
 
-Installation
-============
-
-To install, download the package and type
-
-`python setup.py install`
-
 Links
 =====
 
