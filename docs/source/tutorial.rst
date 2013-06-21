@@ -36,4 +36,4 @@ should complete the tutorials in order, as each tutorial extends the previous on
 .. _Tutorial2: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial2.ipynb
 .. _Tutorial3: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial3.ipynb
 .. _Tutorial4: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial4.ipynb
-.. _Tutorial5: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial4.ipynb
+.. _Tutorial5: http://nbviewer.ipython.org/urls/raw.github.com/kyleabeauchamp/FitEnsemble/master/tutorial/Tutorial5.ipynb
