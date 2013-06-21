@@ -18,7 +18,6 @@ Visit http://fitensemble.readthedocs.org/en/latest/installation.html for install
 Links
 =====
 
-- Source code: https://github.com/kyleabeauchamp/FitEnsemble
 - Documentation: http://FitEnsemble.readthedocs.org/en/latest
 
 Visit the documentation to get started!
