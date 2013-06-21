@@ -40,3 +40,5 @@ source code, you can install FitEnsemble with the following command::
 .. _PyMC: https://pypi.python.org/pypi/pymc
 .. _Enthought: http://enthought.com/
 .. _Anaconda: http://continuum.io/
+.. _Pandas: http://pandas.pydata.org/
+.. _NumExpr: http://code.google.com/p/numexpr/

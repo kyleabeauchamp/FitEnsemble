@@ -34,7 +34,6 @@ Table of Contents:
 
    installation
    tutorial
-   command_line
 
 
 .. [R1] Beauchamp, K. A., Das, R. , Pande, V. S.  Inferring Conformational 
