@@ -1,10 +1,10 @@
-from fitensemble import belt
+from fitensemble import belt, ensemble_fitter
 from mdtraj.testing import eq
 import numpy as np
 
 
 def generate_gaussian_data(num_frames, num_measurements):
-    prior_pops = belt.get_prior_pops(num_frames)
+    prior_pops = ensemble_fitter.get_prior_pops(num_frames)
     predictions = np.random.normal(size=(num_frames, num_measurements))
     return prior_pops, predictions
 
