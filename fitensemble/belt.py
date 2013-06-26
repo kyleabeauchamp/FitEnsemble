@@ -21,65 +21,6 @@ import numexpr as ne
 
 ne.set_num_threads(2)  # I found optimal performance for 2-3 threads.  Also you should use OMP_NUM_THREADS=2  Optimal performance depends on the input size and your system specs.
 
-
-def get_q(alpha, predictions):
-    """Project predictions onto alpha.
-
-    Parameters
-    ----------
-    alpha : ndarray, shape = (num_measurements)
-        Biasing weights for each experiment.
-    predictions : ndarray, shape = (num_frames, num_measurements)
-        predictions[j, i] gives the ith observabled predicted at frame j
-
-    Returns
-    -------
-    q : ndarray, shape = (num_frames)
-        q is -1.0 * predictions.dot(alpha)
-    Notes
-    -----
-    We also mean-subtract q, as this provides improved
-    numerical stability.
-    """
-    q = predictions.dot(-1.0 * alpha)
-    q -= q.mean()  # Improves numerical stability without changing populations.
-    return q
-
-
-def get_populations_from_q(q, predictions, prior_pops):
-    """Return the reweighted conformational populations.
-
-    Parameters
-    ----------
-    q : ndarray, shape = (num_frames)
-        q is -1.0 * predictions.dot(alpha)
-    predictions : ndarray, shape = (num_frames, num_measurements)
-        predictions[j, i] gives the ith observabled predicted at frame j
-    prior_pops : ndarray, shape = (num_frames)
-        Prior populations of each conformation.  If None, then use uniform pops.
-
-    Returns
-    -------
-    populations : ndarray, shape = (num_frames)
-        Reweighted populations of each conformation
-
-    Notes
-    -----
-    We typically input the mean-subtracted q, as this provides improved
-    numerical stability.
-    """
-    populations = ne.evaluate("exp(q) * prior_pops")
-    populations_sum = populations.sum()
-
-    if np.isfinite(populations_sum):
-        populations /= populations_sum
-    else:  # If we have NAN or inf issues, pick the frame with highest population.
-        populations.fill(0.0)
-        populations[q.argmax()] = 1.
-
-    return populations
-
-
 def get_populations_from_alpha(alpha, predictions, prior_pops):
     """Return the reweighted conformational populations.
 
@@ -98,8 +39,19 @@ def get_populations_from_alpha(alpha, predictions, prior_pops):
         Reweighted populations of each conformation
 
     """
-    q = get_q(alpha, predictions)
-    return get_populations_from_q(q, predictions, prior_pops)
+    q = predictions.dot(-1.0 * alpha)
+    q -= q.mean()  # Improves numerical stability without changing populations.
+    
+    populations = ne.evaluate("exp(q) * prior_pops")
+    populations_sum = populations.sum()
+
+    if np.isfinite(populations_sum):
+        populations /= populations_sum
+    else:  # If we have NAN or inf issues, pick the frame with highest population.
+        populations.fill(0.0)
+        populations[q.argmax()] = 1.    
+
+    return populations
 
 
 class BELT(EnsembleFitter):
@@ -126,14 +78,8 @@ class BELT(EnsembleFitter):
         """Must be called by any subclass of BELT; initializes MCMC variables."""
 
         @pymc.dtrm
-        def q(alpha=self.alpha, prior_pops=self.prior_pops):
-            return get_q(alpha, self.predictions)
-        self.q = q
-        self.q.keep_trace = False
-
-        @pymc.dtrm
-        def populations(q=self.q, prior_pops=self.prior_pops):
-            return get_populations_from_q(q, self.predictions, prior_pops)
+        def populations(alpha=self.alpha, prior_pops=self.prior_pops):
+            return get_populations_from_alpha(alpha, self.predictions, prior_pops)
         self.populations = populations
         self.populations.keep_trace = False
 
@@ -215,11 +161,11 @@ class MaxEnt_BELT(BELT):
         self.log_prior_pops = np.log(self.prior_pops)
 
         @pymc.potential
-        def logp_prior(populations=self.populations, q=self.q, log_prior_pops=self.log_prior_pops):
+        def logp_prior(populations=self.populations, log_prior_pops=self.log_prior_pops):
             if populations.min() <= 0:
                 return -1 * np.inf
             else:
-                expr = populations.dot(q) - populations.dot(log_prior_pops)
+                expr = populations.dot(np.log(populations)) - populations.dot(log_prior_pops)
                 return -1 * regularization_strength * expr
         self.logp_prior = logp_prior
 
