@@ -41,13 +41,27 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
 
     delta = (measurements - mu) / uncertainties
 
-    return np.linalg.norm(delta)**2.
+    return np.linalg.norm(delta) ** 2.
 
 
 class BayesianWeighting(EnsembleFitter):
     def __init__(self, predictions, measurements, uncertainties, state_assignments, prior_pops=None):
         """Note that this class state-averaged predictions.  This is in contrast to the BELT methed, which
         takes inputs for each *frame*.
+        
+        Notes
+        -----
+        prior_pops determines the hyperparameters used in the Dirichlet prior.
+        Depending on your needs, there are several possibilities.  A
+        vector of ones is a reasonable choice for an uninformative prior, 
+        as this allows the data and likelihood to determine the value 
+        of the populations.  Another choice of `prior_pops` is to input
+        the observed counts from your simulations.  This centers the prior
+        density maximum around the simulation results, penalizing models 
+        that stray from the simulation.  Note that for simulations with 
+        time correlation, you may have to scale the total number of 
+        observed counts by the statistical inefficiency, so as to correct
+        for correlation between counts.  
         """
         EnsembleFitter.__init__(self, predictions, measurements, uncertainties)
 
@@ -76,7 +90,7 @@ class BayesianWeighting(EnsembleFitter):
 
         @pymc.potential
         def logp(populations=self.populations,mu=self.mu):
-            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
+            return -0.5 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
         self.logp = logp
 
     def iterate_populations(self):

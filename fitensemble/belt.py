@@ -144,7 +144,7 @@ class BELT(EnsembleFitter):
 
         @pymc.potential
         def logp(populations=self.populations,mu=self.mu):
-            return -1 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
+            return -0.5 * get_chi2(populations, self.predictions, self.measurements, self.uncertainties, mu=mu)
         self.logp = logp
 
     def iterate_populations(self):

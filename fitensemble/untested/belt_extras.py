@@ -87,7 +87,7 @@ class MaxEnt_Correlation_Corrected_BELT(BELT):
             z = (mu - measurements) / uncertainties
             chi2 = rho_inverse.dot(z)
             chi2 = z.dot(chi2)
-            return -1 * chi2
+            return -0.5 * chi2
         self.logp = logp
 
 

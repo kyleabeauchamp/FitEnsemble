@@ -60,7 +60,7 @@ def get_chi2(populations, predictions, measurements, uncertainties, mu=None):
 
     delta = (measurements - mu) / uncertainties
 
-    return np.linalg.norm(delta)**2.
+    return np.linalg.norm(delta) ** 2.
 
 
 def sample_prior_pops(num_frames, bootstrap_index_list):
