@@ -198,7 +198,7 @@ class Dirichlet_BELT(BELT):
                 return -1 * np.inf
             else:
                 expr = self.prior_pops.dot(np.log(populations))
-                return -1 * regularization_strength * expr
+                return regularization_strength * expr
         self.logp_prior = logp_prior
 
 

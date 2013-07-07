@@ -50,9 +50,9 @@ def test_get_populations_from_alpha_2D_gaussian():
     alpha = np.array([-0.25, 0.25])
     populations = belt.get_populations_from_alpha(alpha, predictions, prior_pops)
     mu = predictions.T.dot(populations)
-    eq(mu, -1.0 * alpha, decimal=3)
+    eq(mu, -1.0 * alpha, decimal=2)
 
-@skipIf(os.environ.get("TRAVIS", None) == 'true', "This SSE3 C code doesn't run correctly on travis-ci.org?") 
+@skipIf(os.environ.get("TRAVIS", None) == 'true', "Too slow for Travis") 
 def test_BELT_1D_gaussian_maxent():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
@@ -74,7 +74,7 @@ def test_BELT_1D_gaussian_maxent():
     eq(mu, mu0, decimal=2)
     eq(sig, rho, decimal=2)
 
-@skipIf(os.environ.get("TRAVIS", None) == 'true', "This SSE3 C code doesn't run correctly on travis-ci.org?") 
+@skipIf(os.environ.get("TRAVIS", None) == 'true', "Too slow for Travis") 
 def test_BELT_1D_gaussian_MVN():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
@@ -96,7 +96,7 @@ def test_BELT_1D_gaussian_MVN():
     eq(mu, mu0, decimal=2)
     eq(sig, rho, decimal=2)
 
-@skipIf(os.environ.get("TRAVIS", None) == 'true', "This SSE3 C code doesn't run correctly on travis-ci.org?") 
+@skipIf(os.environ.get("TRAVIS", None) == 'true', "Too slow for Travis") 
 def test_BELT_1D_gaussian_dirichlet():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
