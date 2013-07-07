@@ -162,10 +162,42 @@ class MaxEnt_BELT(BELT):
 
         @pymc.potential
         def logp_prior(populations=self.populations, log_prior_pops=self.log_prior_pops):
+            expr = populations.dot(np.log(populations)) - populations.dot(log_prior_pops)
+            return -1 * regularization_strength * expr
+        self.logp_prior = logp_prior
+
+class Dirichlet_BELT(BELT):
+    """Bayesian Energy Landscape Tilting with Dirichlet prior."""
+    def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
+        """Bayesian Energy Landscape Tilting with maximum entropy prior.
+
+        Parameters
+        ----------
+        predictions : ndarray, shape = (num_frames, num_measurements)
+            predictions[j, i] gives the ith observabled predicted at frame j
+        measurements : ndarray, shape = (num_measurements)
+            measurements[i] gives the ith experimental measurement
+        uncertainties : ndarray, shape = (num_measurements)
+            uncertainties[i] gives the uncertainty of the ith experiment
+        regularization_strength : float
+            How strongly to weight the prior (e.g. lambda)
+        precision : ndarray, optional, shape = (num_measurements, num_measurements)
+            The precision matrix of the predicted observables.
+        prior_pops : ndarray, optional, shape = (num_frames)
+            Prior populations of each conformation.  If None, use uniform populations.
+        """
+
+        BELT.__init__(self,predictions,measurements,uncertainties,prior_pops=prior_pops)
+
+        self.alpha = pymc.Uninformative("alpha",value=np.zeros(self.num_measurements))  # The prior on alpha is defined as a potential, so we use Uninformative variables here.
+        self.initialize_variables()
+
+        @pymc.potential
+        def logp_prior(populations=self.populations):
             if populations.min() <= 0:
                 return -1 * np.inf
             else:
-                expr = populations.dot(np.log(populations)) - populations.dot(log_prior_pops)
+                expr = self.prior_pops.dot(np.log(populations))
                 return -1 * regularization_strength * expr
         self.logp_prior = logp_prior
 

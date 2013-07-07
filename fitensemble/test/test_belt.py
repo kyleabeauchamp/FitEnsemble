@@ -95,3 +95,25 @@ def test_BELT_1D_gaussian_MVN():
     
     eq(mu, mu0, decimal=2)
     eq(sig, rho, decimal=2)
+
+@skipIf(os.environ.get("TRAVIS", None) == 'true', "This SSE3 C code doesn't run correctly on travis-ci.org?") 
+def test_BELT_1D_gaussian_dirichlet():
+    num_frames = 400000
+    predictions = np.random.normal(size=(num_frames,1))
+
+    reg = 0.5
+    measurements = np.array([0.25])
+    uncertainties = np.array([1.0])
+
+    model = belt.Dirichlet_BELT(predictions, measurements, uncertainties, regularization_strength=reg)
+    model.sample(100000, thin=5)
+
+    a = model.mcmc.trace("alpha")[:]
+    mu = a.mean(0)
+    sig = a.std(0)
+
+    rho = np.array([(1 + reg) ** -0.5])
+    mu0 = - measurements * rho ** 2.
+    
+    eq(mu, mu0, decimal=2)
+    eq(sig, rho, decimal=2)
