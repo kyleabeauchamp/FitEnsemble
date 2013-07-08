@@ -4,6 +4,7 @@ from unittest import skipIf
 import os
 import numpy as np
 
+regularization_strength = 1.5  # Strength of prior when testing BELT
 
 def generate_gaussian_data(num_frames, num_measurements):
     prior_pops = ensemble_fitter.get_prior_pops(num_frames)
@@ -57,18 +58,17 @@ def test_BELT_1D_gaussian_maxent():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
 
-    reg = 0.5
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.MaxEnt_BELT(predictions, measurements, uncertainties, regularization_strength=reg)
+    model = belt.MaxEnt_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]
     mu = a.mean(0)
     sig = a.std(0)
 
-    rho = np.array([(1 + reg) ** -0.5])
+    rho = np.array([(1 + regularization_strength) ** -0.5])
     mu0 = - measurements * rho ** 2.
     
     eq(mu, mu0, decimal=2)
@@ -79,18 +79,17 @@ def test_BELT_1D_gaussian_MVN():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
 
-    reg = 0.5
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.MVN_BELT(predictions, measurements, uncertainties, regularization_strength=reg)
+    model = belt.MVN_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]
     mu = a.mean(0)
     sig = a.std(0)
 
-    rho = np.array([(1 + reg) ** -0.5])
+    rho = np.array([(1 + regularization_strength) ** -0.5])
     mu0 = - measurements * rho ** 2.
     
     eq(mu, mu0, decimal=2)
@@ -101,18 +100,17 @@ def test_BELT_1D_gaussian_dirichlet():
     num_frames = 400000
     predictions = np.random.normal(size=(num_frames,1))
 
-    reg = 0.5
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.Dirichlet_BELT(predictions, measurements, uncertainties, regularization_strength=reg)
+    model = belt.Dirichlet_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]
     mu = a.mean(0)
     sig = a.std(0)
 
-    rho = np.array([(1 + reg) ** -0.5])
+    rho = np.array([(1 + regularization_strength) ** -0.5])
     mu0 = - measurements * rho ** 2.
     
     eq(mu, mu0, decimal=2)
