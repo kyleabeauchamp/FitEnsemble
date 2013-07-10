@@ -61,7 +61,7 @@ def test_BELT_1D_gaussian_maxent():
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.MaxEnt_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
+    model = belt.MaxEntBELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]
@@ -82,7 +82,7 @@ def test_BELT_1D_gaussian_MVN():
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.MVN_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
+    model = belt.MVNBELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]
@@ -103,7 +103,7 @@ def test_BELT_1D_gaussian_dirichlet():
     measurements = np.array([0.25])
     uncertainties = np.array([1.0])
 
-    model = belt.Dirichlet_BELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
+    model = belt.DirichletBELT(predictions, measurements, uncertainties, regularization_strength=regularization_strength)
     model.sample(100000, thin=5)
 
     a = model.mcmc.trace("alpha")[:]

@@ -100,7 +100,7 @@ class BELT(EnsembleFitter):
             yield populations
 
 
-class MVN_BELT(BELT):
+class MVNBELT(BELT):
     """Bayesian Energy Landscape Tilting with MultiVariate Normal Prior."""
 
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, precision=None, prior_pops=None):
@@ -132,7 +132,7 @@ class MVN_BELT(BELT):
         self.initialize_variables()
 
 
-class MaxEnt_BELT(BELT):
+class MaxEntBELT(BELT):
     """Bayesian Energy Landscape Tilting with maximum entropy prior."""
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
         """Bayesian Energy Landscape Tilting with maximum entropy prior.
@@ -162,11 +162,16 @@ class MaxEnt_BELT(BELT):
 
         @pymc.potential
         def logp_prior(populations=self.populations, log_prior_pops=self.log_prior_pops):
+            # So x log(x) -> 0 as x -> 0, so we want to *drop* zeros
+            # This is important because we otherwise might get NANs, as numpy doesn't know how to evaluate x * np.log(x)
+            ind = np.where(populations > 0)[0]
+            populations = populations[ind]
+            log_prior_pops = log_prior_pops[ind]
             expr = populations.dot(np.log(populations)) - populations.dot(log_prior_pops)
             return -1 * regularization_strength * expr
         self.logp_prior = logp_prior
 
-class Dirichlet_BELT(BELT):
+class DirichletBELT(BELT):
     """Bayesian Energy Landscape Tilting with Dirichlet prior."""
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
         """Bayesian Energy Landscape Tilting with maximum entropy prior.
