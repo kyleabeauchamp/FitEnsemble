@@ -18,6 +18,7 @@ import numpy as np
 import pymc
 from ensemble_fitter import EnsembleFitter, get_chi2
 import numexpr as ne
+import math
 
 ne.set_num_threads(2)  # I found optimal performance for 2-3 threads.  Also you should use OMP_NUM_THREADS=2  Optimal performance depends on the input size and your system specs.
 
@@ -40,7 +41,14 @@ def get_populations_from_alpha(alpha, predictions, prior_pops):
 
     """
     q = predictions.dot(-1.0 * alpha)
-    q -= q.mean()  # Improves numerical stability without changing populations.
+    mu = q.mean()
+
+    if not np.isfinite(mu):  # Sometimes numpy's mean is not numerically stable enough, so we switch to using fsum()
+        print("Warning: possible numerical instability detected.")
+        q1 = (q / float(len(q)))
+        mu = math.fsum(q1)
+
+    q -= mu  # Improves numerical stability without changing populations.
     
     populations = ne.evaluate("exp(q) * prior_pops")
     populations_sum = populations.sum()
@@ -174,7 +182,7 @@ class MaxEntBELT(BELT):
 class DirichletBELT(BELT):
     """Bayesian Energy Landscape Tilting with Dirichlet prior."""
     def __init__(self, predictions, measurements, uncertainties, regularization_strength=1.0, prior_pops=None):
-        """Bayesian Energy Landscape Tilting with maximum entropy prior.
+        """Bayesian Energy Landscape Tilting with Dirichlet prior.
 
         Parameters
         ----------
@@ -207,7 +215,34 @@ class DirichletBELT(BELT):
         self.logp_prior = logp_prior
 
 
-def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples=50000, thin=1, prior="maxent"):
+def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples=50000, thin=1):
+    """Fit model on training data, evaluate on test data, and return the chi squared.
+
+    Parameters
+    ----------
+    predictions : ndarray, shape = (num_frames, num_measurements)
+        predictions[j, i] gives the ith observabled predicted at frame j
+    measurements : ndarray, shape = (num_measurements)
+        measurements[i] gives the ith experimental measurement
+    uncertainties : ndarray, shape = (num_measurements)
+        uncertainties[i] gives the uncertainty of the ith experiment
+    model_factory : lambda function
+        A function that takes as input predictions, measurements, and uncertainties
+        and generates a BELT model.  
+    bootstrap_index_list : list (of integer numpy arrays)
+        bootstrap_index_list is a list numpy arrays of frame indices that
+        mark the different training and test sets.
+        With a single trajectory, bootstrap_index_list will look something 
+        like the following
+        [np.array([0,1,2,... , n/2]), np.array([n / 2 + 1, ..., n - 1])]
+
+    Returns
+    -------
+    train_chi, test_chi : float
+        Training and test scores of cross validated models.
+
+    """
+
     all_indices = np.concatenate(bootstrap_index_list)
     test_chi = []
     train_chi = []
