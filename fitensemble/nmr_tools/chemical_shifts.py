@@ -15,7 +15,9 @@ shiftx2_atom_uncertainties = pd.Series({  # This uses shiftx+ RMS, which only ac
 "CB":0.8583,
 "C": 0.8699,
 "H": 0.3783,
-"HA":0.1967
+"HA":0.1967,
+"HA2":0.1967,
+"HA3":0.1967,
 })
 
 shiftx2_atom_uncertainties_BAD = pd.Series({  # This uses overall shiftx2 RMS, which includes the sequence effects.  We don't care about sequence differences, so these are overly optimistic.
@@ -24,7 +26,7 @@ shiftx2_atom_uncertainties_BAD = pd.Series({  # This uses overall shiftx2 RMS, w
 "CB":0.5163,
 "C": 0.5330,
 "H": 0.1711,
-"HA":0.1231
+"HA":0.1231,
 })
 
 sparta_atom_uncertainties = pd.Series({
@@ -33,6 +35,8 @@ sparta_atom_uncertainties = pd.Series({
 "CA":0.92,
 "CB":1.13,
 "HA":0.25,
+"HA2":0.25,
+"HA3":0.25,
 "H":0.49
 })
 
@@ -40,6 +44,8 @@ all_atom_uncertainties = pd.DataFrame([sparta_atom_uncertainties, shiftx2_atom_u
 weights = all_atom_uncertainties ** -2.
 weights /= weights.sum()
 weights["HA"]["ppm"] = 0.
+weights["HA2"]["ppm"] = 0.
+weights["HA3"]["ppm"] = 0.
 
 atom_uncertainties_independent = ((weights * all_atom_uncertainties) ** 2.0).sum() ** 0.5
 atom_uncertainties = (weights * all_atom_uncertainties ** 2.0).sum() ** 0.5
