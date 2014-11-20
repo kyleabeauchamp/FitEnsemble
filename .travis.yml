@@ -10,7 +10,7 @@ script:
   - conda install --yes conda-build
   - conda build devtools/conda-recipe
   - source activate $python
-  - conda install $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
+  - conda install $HOME/miniconda/conda-bld/linux-64/fitensemble-*
   - conda list -e
   - nosetests
 
