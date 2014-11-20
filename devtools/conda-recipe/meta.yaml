@@ -11,6 +11,7 @@ requirements:
     - scipy
     - numexpr
     - pandas
+    - pytables
     - nose
     - setuptools
     - mdtraj
@@ -24,6 +25,7 @@ requirements:
     - scipy
     - numexpr
     - pandas
+    - pytables    
     - nose
     - setuptools
     - mdtraj
