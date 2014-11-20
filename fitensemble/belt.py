@@ -215,7 +215,7 @@ class DirichletBELT(BELT):
         self.logp_prior = logp_prior
 
 
-def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples=50000, thin=1):
+def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory, bootstrap_index_list, num_samples=50000, burn=None,thin=1):
     """Fit model on training data, evaluate on test data, and return the chi squared.
 
     Parameters
@@ -242,7 +242,8 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
         Training and test scores of cross validated models.
 
     """
-
+    
+    if burn is None: burn = num_samples/2 
     all_indices = np.concatenate(bootstrap_index_list)
     test_chi = []
     train_chi = []
@@ -257,16 +258,16 @@ def cross_validated_mcmc(predictions, measurements, uncertainties, model_factory
 
         print("Building model for %d round of cross validation." % j)
         model = model_factory(train_data, measurements, uncertainties)
-        model.sample(num_samples,thin=thin)
+        model.sample(num_samples, burn=burn, thin=thin)
 
         train_chi2_j = []  # Calculate the chi2 error on training data
-        for k, alpha in enumerate(model.mcmc.trace("alpha")):
+        for alpha in model.mcmc.trace("alpha"):
             p = get_populations_from_alpha(alpha, train_data, model.prior_pops)  # Training set prior_pops has correct shape
             chi2 = get_chi2(p, train_data, measurements, uncertainties)
             train_chi2_j.append(chi2)
 
         test_chi2_j = []  # Calculate the chi2 error on test data
-        for k, alpha in enumerate(model.mcmc.trace("alpha")):
+        for alpha in model.mcmc.trace("alpha"):
             p = get_populations_from_alpha(alpha, test_data, test_prior_pops)  # Training set prior_pops has correct shape
             chi2 = get_chi2(p, test_data, measurements, uncertainties)
             test_chi2_j.append(chi2)
