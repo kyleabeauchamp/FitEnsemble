@@ -1,0 +1,11 @@
+numpy
+scipy
+pytables
+cython
+numexpr
+pandas
+pyyaml
+pip
+nose
+mdtraj
+pymc

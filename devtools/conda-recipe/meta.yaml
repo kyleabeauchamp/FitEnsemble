@@ -1,0 +1,37 @@
+package:
+  name: fitensemble
+  version: !!str dev
+
+
+requirements:
+  build:
+    - python
+    - cython
+    - numpy
+    - scipy
+    - numexpr
+    - pandas
+    - pytables
+    - nose
+    - setuptools
+    - mdtraj
+    - pandas    
+    - pymc    
+
+  run:
+    - python
+    - cython
+    - numpy
+    - scipy
+    - numexpr
+    - pandas
+    - pytables    
+    - nose
+    - setuptools
+    - mdtraj
+    - pandas    
+    - pymc    
+about:
+  home: https://github.com/kyleabeauchamp/fitensemble
+  license: GNU Lesser General Public License v2 or later (LGPLv2+)
+
