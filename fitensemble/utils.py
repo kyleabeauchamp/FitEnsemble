@@ -1,5 +1,5 @@
 import numpy as np
-from mdtraj.utils.arrays import ensure_type
+from mdtraj.utils import ensure_type
 
 def validate_pandas_columns(predictions, measurements, uncertainties):
     """Check that pandas DataFrames / Series have compatible entries.
