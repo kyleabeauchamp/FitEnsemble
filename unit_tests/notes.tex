@@ -1,0 +1,43 @@
+ 
+\subsection*{Derivation of Jeffrey's Prior}
+
+This section derives the Jeffrey's prior for the BELT likelihood.  We do not recommend the use of this prior, as it is expensive to compute and unable to provide regularization.  This section can be skipped by most readers; we include it only for completeness.
+
+Jeffrey's prior dictates that 
+
+$$P(\alpha) \propto \det(I(\alpha))^\frac{1}{2}$$
+
+The Fisher information matrix, $I(\alpha)$, is given by
+
+$$I_{ab}(\alpha) = E_\alpha(\frac{d\log P(F|\alpha)}{d\alpha_{a}}\frac{d\log P(F|\alpha)}{d\alpha_{b}})$$
+
+First, we examine the log likelihood (dropping terms independent of $\alpha$) and calculate its derivative:
+
+$$LL = \log P(F|\alpha) = - \frac{1}{2}\sum_i (\frac{F_i - \langle F_i\rangle_\alpha}{\sigma_i})^2$$
+
+$$\frac{d(LL)}{d\alpha_a} = \sum_i \frac{1}{\sigma_i}(F_i - \langle F_i \rangle_\alpha) \frac{d\langle F_i \rangle_\alpha}{d\alpha_a}$$
+
+When we insert this equation into the expectation, only $(F_i - \langle F_i \rangle_\alpha)$ depends on $F_i$.  The remaining terms can be pulled outside the expectation:
+
+$$I_{ab} = \sum_{ij} \frac{d\langle F_i \rangle_\alpha}{d\alpha_a} \frac{d\langle F_j \rangle_\alpha}{d\alpha_b} E(\frac{1}{\sigma_i \sigma_j}(F_i - \langle F_i \rangle_\alpha)(F_j - \langle F_j \rangle_\alpha))$$
+
+Because the conditional likelihood is a diagonal multivariate normal, the expectation is simply $\delta_{ij}$, leading to 
+
+$$I_{ab} = \sum_{i} \frac{d\langle F_i \rangle_\alpha}{d\alpha_a} \frac{d\langle F_i \rangle_\alpha}{d\alpha_b} $$
+
+Now, we know that 
+
+$$\frac{d\langle F_i \rangle_\alpha}{d\alpha_a} = \sum_k f_{ak} \frac{d\pi_k}{d\alpha_a}$$
+
+where $f_{ak} = f_a(x_k)$.  Similarly, we can show that
+
+$$\frac{d\pi_k}{d\alpha_a} = \pi_k (\langle F_a \rangle_{\alpha} - f_{ak})$$
+
+
+Putting all this together, we can show that
+
+$$I = S^T S$$
+
+Where 
+
+$$S_{ia} = \sum_k \pi_k (<F_a>_\alpha - f_{ka}) f_{ki}$$

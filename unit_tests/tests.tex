@@ -1,0 +1,144 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amssymb,amsfonts,amsmath}
+\usepackage{url}
+
+
+\begin{document}
+
+$\underbrace{\log P(\alpha| F_1, ..., F_n)}_{Posterior} = -\sum_i \frac{1}{2} \frac{1}{\sigma_i^2} \langle \rangle_{\alpha}$
+
+\section{Introduction}
+
+Here we derive a number of analytical results to use as unit tests of FitEnsemble.  
+
+
+\section{Reweighting a 1D Gaussian}
+
+$$\Delta U(x;\alpha) = \sum_i^n \alpha_i f_i(x)$$
+
+
+$$\pi_j(\alpha) = \frac{1}{\sum_k \exp[-\Delta U(x_k;\alpha)]} \exp[-\Delta U(x_j;\alpha)]$$
+
+
+Suppose $x = N(0,1)$.  
+
+$$P_0(x)  = \frac{1}{\sqrt{2 \pi}} \exp(-\frac{1}{2} x^2)$$
+
+Suppose we reweight with BELT:
+
+$$P_1(x) \propto \exp(-\frac{1}{2} x^2 - \alpha x)$$
+
+Completing the square shows that
+
+$$x' \sim N(-\alpha, 1)$$
+
+\section{Reweighting a 2D Gaussian}
+
+In the case of multiple dimensions, the same result should hold but with vectors:
+
+$$x' \sim N(-\alpha, 1)$$
+
+\section{1D Gaussian BELT}
+
+Suppose the $P(\alpha) \sim 1$.  Then
+
+$$LP(\alpha|F) = -\frac{1}{2\sigma_i^2}(\langle f_i(x)\rangle _\alpha - F_i)^2 + LP(\alpha)$$
+
+Because $x' \sim N(-\alpha, 1)$, we know that
+
+$$\langle f_i(x)\rangle _\alpha = -\alpha$$
+
+If $LP(\alpha)$ is constant, it follows that the
+
+$$P(\alpha | F) \sim N(-F, \sigma_i)$$
+
+It appears that this test is difficult to run because the MCMC sampler occasionally gets stuck in a local minimum, leading to slowly converging chains with a larger than expected standard deviation.  We therefore chose to test things with a non-zero prior.
+
+\section{1D Gaussian BELT with Maxent Prior}
+
+According to Wikipedia, the relative entropy of two normal distributions with unit variance is given by:
+
+$$\frac{1}{2} (\mu_1 - \mu_0)^2$$
+
+$$\mu_0 = 0$$
+
+$$LP(\alpha|F) = -\frac{1}{2\sigma_i^2}(\langle f_i(x)\rangle _\alpha - F_i)^2 - \frac{\lambda}{2} (\mu_1)^2$$
+
+Because $x' \sim N(-\alpha, 1)$, we know that
+
+$$\langle f_i(x)\rangle _\alpha = -\alpha$$
+
+$$\mu_1 = -\alpha$$
+
+We have
+
+$$-\frac{1}{2} \frac{1}{\sigma^2} (\alpha + F)^2 - \frac{\lambda}{2} \alpha^2$$
+
+Let's let $\sigma = 1$.  
+
+$$-\frac{1}{2} (\alpha + F)^2 - \frac{\lambda}{2} \alpha^2$$
+
+$$-\frac{1}{2}( \alpha^2 (1 + \lambda) + 2 \alpha F + F^2)$$
+
+Let $\rho = (1 + \lambda)^{-1 / 2}$
+
+Then 
+
+$$-\frac{1}{2 \rho^2} (\alpha^2 + 2 \alpha F \rho^2 + F^2 \rho^2)$$
+
+Then we have
+
+$$-\frac{1}{2 \rho^2} (\alpha + F \rho^2)^2 + [...]$$
+
+Thus, we have 
+
+$$\alpha \sim N(F\rho^2, \rho^2)$$
+
+\section{1D Gaussian BELT with MVN prior}
+
+Suppose that $x$ is a multivariate standard normal.  
+
+$$LP(\alpha|F) = -\frac{1}{2} \sum_i \frac{1}{\sigma_i^2}(\langle f_i(x)\rangle _\alpha - F_i)^2 + LP(\alpha)$$
+
+$$LP(\alpha|F) = -\frac{1}{2} \sum_i \frac{1}{\sigma_i^2}(\alpha + F_i)^2 + LP(\alpha)$$
+
+Because $\alpha$ is MVN,
+
+$$LP(\alpha|F) = -\frac{1}{2} \sum_i \frac{1}{\sigma_i^2}(\alpha_i + F_i)^2 - \frac{\lambda}{2} \sum_i \alpha_i^2$$
+
+\section{Uniform RV on [0,1]}
+
+Suppose $x \sim U(0,1)$.  
+
+$$P^0(x) = 1$$
+
+$$P^1(x) = \frac{1}{Z} \exp(-\alpha x)$$
+
+$$Z = \frac{1}{\alpha} (1 - \exp(-\alpha))$$
+
+$$<x>_\alpha = \frac{1}{\alpha} - (\exp(\alpha) - 1)^{-1}$$
+
+
+\section{Exponential RV}
+Let 
+$$P^0(x) = k \exp(-k x)$$
+Then
+$$P^1(x) = (k + \alpha) \exp(-(k + \alpha) x)$$
+
+\section{Summary:}
+
+If 
+$$x^0 \sim N(0,1)$$
+Then
+$$x^1 \sim N(-\alpha, 1)$$
+
+If $x^0 \sim N(0,1)$ and  $\alpha$ has a Maxent or MVN prior, and $F$ is our measurement, then 
+
+$$\alpha \sim N(F\rho^2, \rho^2)$$
+
+Let $\rho = (1 + \lambda)^{-1 / 2}$
+
+\end{document}
